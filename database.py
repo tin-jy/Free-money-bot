@@ -147,5 +147,5 @@ def reset_user_attempts():
         last_reset += timedelta(days=7)
 
     if is_time_to_reset:
-        users_collection.update_many({}, {"$set": {"attempts": 2}})
+        users_collection.update_many({}, {"$set": {"attempts": STARTING_ATTEMPTS}})
         bank_collection.update_one({}, {"$set": {"last_weekly_reset": last_reset}})
