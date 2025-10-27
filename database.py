@@ -87,7 +87,6 @@ def create_user_if_not_exist(user_id: int, user_name: str) -> bool:
             "attempts": STARTING_ATTEMPTS
         }
         users_collection.insert_one(user_doc)
-        print(f"✅ Created new user: {user_name} ({user_id})")
         return True
     
     print(f"ℹ️ User {user_name} ({user_id}) already exists.")
