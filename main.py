@@ -21,6 +21,7 @@ def build_application():
 
     # Regular commands
     app.add_handler(CommandHandler("hello", hello))
+    app.add_handler(CommandHandler("help", help))
     app.add_handler(CommandHandler("geiwoqian", take))
     app.add_handler(CommandHandler("balance", get_balance))
     app.add_handler(CommandHandler("leaderboard", generate_leaderboard))

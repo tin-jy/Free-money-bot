@@ -1,27 +1,26 @@
 from telegram import Update
 from telegram.ext import ContextTypes
+from datetime import datetime, timedelta, timezone
 import logic
 from constants import *
 import random
 
 pending_takes = {}
+last_sent = {}
+lookie = (1, datetime.now(timezone.utc)) # %chance, last used
 
 async def hello(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(f'Hello {update.effective_user.first_name}')
 
+async def help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    response = f"Use /geiwoqian to get credits! Users get 3 attempts weekly that reset every Saturday, at 8pm SGT. Bank top ups are done daily at 8pm SGT."
+    await update.message.reply_text(response)
+
 async def bad(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    send_sticker = random.randint(0, 2)
-    if send_sticker:
-        await context.bot.send_sticker(
-            chat_id=update.effective_chat.id,
-            sticker=random.choice(BAD_STICKERES),
-            reply_to_message_id=update.message.id
-        )
-    else:
-        await context.bot.send_message(
-            chat_id=update.effective_chat.id,
-            text=random.choice(BAD),
-            reply_to_message_id=update.message.id
+    await context.bot.send_sticker(
+        chat_id=update.effective_chat.id,
+        sticker=random.choice(BAD_STICKERES),
+        reply_to_message_id=update.message.id
     )
 
 async def good(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -80,11 +79,14 @@ async def take(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(AMOUNT_QUERY)
     pending_takes[user.id] = True
 
+def is_not_recent(key):
+    return key not in last_sent or last_sent[key] + timedelta(minutes=5) < datetime.now(timezone.utc)
+
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     text = update.message.text
 
-    if user.id in pending_takes:
+    if user.id in pending_takes:   
         try:
             amount = int(text)
         except ValueError:
@@ -93,6 +95,74 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         del pending_takes[user.id]
         take_status = logic.take(user.id, amount)
         await process_take_status(update, context, take_status, amount)
+        return
+
+
+    text = text.lower()
+    if "dataa" in text or "huaidan" in text:
+        key = "whack"
+        if is_not_recent(key):
+            await context.bot.send_sticker(
+                chat_id=update.effective_chat.id,
+                sticker=random.choice(WHACK_STICKERS)
+            )
+            last_sent[key] = datetime.now(timezone.utc)
+    elif text == "sad":
+        key = "sad"
+        if is_not_recent(key):
+            await context.bot.send_sticker(
+                chat_id=update.effective_chat.id,
+                sticker=random.choice(SAD_STICKERS)
+            )
+            last_sent[key] = datetime.now(timezone.utc)
+    elif "have no proo" in text:
+        key = "proof"
+        if is_not_recent(key):
+            await context.bot.send_sticker(
+                chat_id=update.effective_chat.id,
+                sticker=random.choice(PROOF_STICKERS)
+            )
+            last_sent[key] = datetime.now(timezone.utc)
+    elif ("peppercorn" in text or "hangyodon" in text) and user.id != ADMIN_ID:
+        key = "peppercorn"
+        if is_not_recent(key):
+            await context.bot.send_sticker(
+                chat_id=update.effective_chat.id,
+                sticker=random.choice(PEPPERCORN_STICKERS)
+            )
+            last_sent[key] = datetime.now(timezone.utc)
+    elif "chini" in text:
+        key = "chini"
+        if is_not_recent(key):
+            await context.bot.send_sticker(
+                chat_id=update.effective_chat.id,
+                sticker=random.choice(CHINI_STICKERS)
+            )
+            last_sent[key] = datetime.now(timezone.utc)
+    elif "cole joke" in text or text == "hi bored" or text == "hi tired":
+        key = "laugh"
+        if is_not_recent(key):
+            await context.bot.send_sticker(
+                chat_id=update.effective_chat.id,
+                sticker=random.choice(LAUGH_STICKERS)
+            )
+            last_sent[key] = datetime.now(timezone.utc)
+    elif "pointu" in text:
+        key = "pointu"
+        if is_not_recent(key):
+            await context.bot.send_sticker(
+                chat_id=update.effective_chat.id,
+                sticker=random.choice(POINTU_STICKERS)
+            )
+            last_sent[key] = datetime.now(timezone.utc)
+    elif "remember this" in text:
+        key = "remember"
+        if is_not_recent(key):
+            await context.bot.send_sticker(
+                chat_id=update.effective_chat.id,
+                sticker=random.choice(REMEMBER_STICKERS)
+            )
+            last_sent[key] = datetime.now(timezone.utc)
 
 async def add_attempt(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = update.effective_user
@@ -150,7 +220,28 @@ async def set_user_balance(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
 async def handle_sticker(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     try:
-        print(update.message.sticker.file_id)
-    except Exception:
-        pass
+        # print(update.message.sticker.file_id)
+        if update.message.sticker.file_id in SLEEP_STICKERS:
+            key = "sleep"
+            if is_not_recent(key):
+                await context.bot.send_sticker(
+                chat_id=update.effective_chat.id,
+                sticker=CHICK_TUCKU
+            )
+            last_sent[key] = datetime.now(timezone.utc)
+        elif update.message.sticker.file_id in LOOKIE_STICKERS:
+            global lookie
+            chance, last_combo = lookie
+            if last_combo + timedelta(minutes=1) < datetime.now(timezone.utc):
+                lookie = 1, datetime.now(timezone.utc)
+            elif chance >= random.randint(1, 100):
+                await context.bot.send_sticker(
+                chat_id=update.effective_chat.id,
+                sticker=update.message.sticker.file_id
+            )
+                lookie = 1, datetime.now(timezone.utc)
+            else:
+                lookie = 2 * chance, datetime.now(timezone.utc)
+    except Exception as e:
+        print(e)
     
