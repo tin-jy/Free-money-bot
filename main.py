@@ -23,8 +23,13 @@ def build_application():
     app.add_handler(CommandHandler("hello", hello))
     app.add_handler(CommandHandler("geiwoqian", take))
     app.add_handler(CommandHandler("balance", get_balance))
-    app.add_handler(CommandHandler("bad", bad))
     app.add_handler(CommandHandler("leaderboard", generate_leaderboard))
+
+    # Hidden commands
+    app.add_handler(CommandHandler("bad", bad))
+    app.add_handler(CommandHandler("badbot", bad))
+    app.add_handler(CommandHandler("good", good))
+    app.add_handler(CommandHandler("goodbot", good))
 
     # Message handler
     app.add_handler(MessageHandler(filters.Sticker.ALL, handle_sticker))

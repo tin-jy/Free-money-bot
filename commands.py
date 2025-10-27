@@ -10,8 +10,6 @@ async def hello(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(f'Hello {update.effective_user.first_name}')
 
 async def bad(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    logic.top_up_bank()
-
     send_sticker = random.randint(0, 2)
     if send_sticker:
         await context.bot.send_sticker(
@@ -24,6 +22,13 @@ async def bad(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             chat_id=update.effective_chat.id,
             text=random.choice(BAD),
             reply_to_message_id=update.message.id
+    )
+
+async def good(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await context.bot.send_sticker(
+        chat_id=update.effective_chat.id,
+        sticker=random.choice(GOOD_STICKERS),
+        reply_to_message_id=update.message.id
     )
 
 async def process_take_status(update: Update, context: ContextTypes.DEFAULT_TYPE, take_status, amount):
@@ -121,6 +126,7 @@ async def generate_leaderboard(update: Update, context: ContextTypes.DEFAULT_TYP
     await update.message.reply_text(response, parse_mode="Markdown")
 
 async def get_bank_balance(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    logic.top_up_bank()
     user = update.effective_user
     if user.id != ADMIN_ID:
         await update.message.reply_text("Admin only")
