@@ -4,23 +4,23 @@ from constants import *
 def get_remaining_attempts(user_id):
     return database.get_remaining_attempts(user_id)
 
-def take(user_id, user_name, amount:int):
+def take(user_id, amount:int) -> int:
     if not database.decrement_remaining_attempts(user_id):
-        return UNEXPECTED_ERROR_MESSAGE
+        return UNEXPECTED_ERROR
 
     bank_balance = database.get_bank_balance()
     assert bank_balance >= 0
 
     if amount <= 0:
-        return NEGATIVE_WITHDRAWAL
+        return USER_DUMB
     if amount > bank_balance:
-        return WITHDRAWAL_TOO_LARGE
+        return USER_GREEDY
     
     if database.decrement_bank_balance(amount):
         database.increment_user_balance(user_id, amount)
-        return f"{user_name} took {amount}"
+        return USER_SUCCESS
     
-    return UNEXPECTED_ERROR_MESSAGE
+    return UNEXPECTED_ERROR
 
 def create_user_if_not_exist(user_id, user_name):
     return database.create_user_if_not_exist(user_id, user_name)
@@ -65,3 +65,6 @@ def top_up_bank():
 
 def reset_user_attempts():
     database.reset_user_attempts()
+
+def set_user_balance(user_name, amount):
+    database.set_user_balance(user_name, amount)

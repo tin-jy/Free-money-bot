@@ -27,10 +27,12 @@ def build_application():
     app.add_handler(CommandHandler("leaderboard", generate_leaderboard))
 
     # Message handler
+    app.add_handler(MessageHandler(filters.Sticker.ALL, handle_sticker))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
     # Admin commands
-    app.add_handler(CommandHandler("add", add_attempt))
+    app.add_handler(CommandHandler("addattempt", add_attempt))
+    app.add_handler(CommandHandler("setbalance", set_user_balance))
     app.add_handler(CommandHandler("bank", get_bank_balance))
 
     async def error_handler(update, context):

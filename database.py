@@ -124,7 +124,9 @@ def top_up_bank():
         last_update = last_update.replace(tzinfo=timezone.utc)
 
     while last_update + timedelta(days=1) <= now:
-        amount = random.randint(1, 100)
+        amount = random.expovariate(1 / MEAN_DAILY_TOP_UP)
+        # To ensure min 1, max 150
+        amount = max(min(int(round(amount)), 150), 1)
         increment_bank_balance(amount)
         increment_lifetime_total(amount)
         last_update += timedelta(days=1)
@@ -148,3 +150,10 @@ def reset_user_attempts():
     if is_time_to_reset:
         users_collection.update_many({}, {"$set": {"attempts": STARTING_ATTEMPTS}})
         bank_collection.update_one({}, {"$set": {"last_weekly_reset": last_reset}})
+
+def set_user_balance(user_name, amount):
+    users_collection.update_one(
+        {"user_name": user_name},
+        {"$set": {"balance": amount}}
+    )
+    return amount
