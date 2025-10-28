@@ -7,8 +7,12 @@ import logic
 import html
 from constants import *
 import random
+import asyncio
+from collections import defaultdict
 
-pending_takes = {}
+pending_takes = set()
+user_locks = defaultdict(asyncio.Lock)
+
 last_sent = {}
 
 recent_messages = deque(maxlen=10)
@@ -116,7 +120,7 @@ async def take(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         return
 
     await update.message.reply_text(AMOUNT_QUERY)
-    pending_takes[user.id] = True
+    pending_takes.add(user.id)
 
 def is_not_recent(key, delay=5):
     return key not in last_sent or last_sent[key] + timedelta(minutes=delay) < datetime.now(timezone.utc)
@@ -125,27 +129,29 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     text = update.message.text
 
-    if user.id in pending_takes:   
-        try:
-            amount = int(text)
-        except ValueError:
-            del pending_takes[user.id]
+    async with user_locks[user.id]:
+        if user.id in pending_takes:
+            try:
+                amount = int(text)
+            except ValueError:
+                pending_takes.remove(user.id)
+                return
+
+            pending_takes.remove(user.id)
+
+            take_status = logic.take(user.id, amount)
+
+            logic.log_take_attempt(
+                user_id=user.id,
+                user_name=user.name,
+                chat_id=update.effective_chat.id,
+                chat_type=update.effective_chat.type,
+                amount=amount,
+                is_successful=(take_status == USER_SUCCESS),
+                reason="None" if take_status == USER_SUCCESS else "Stupid" if take_status == USER_DUMB else "Greedy"
+            )
+            await process_take_status(update, context, take_status, amount)
             return
-        del pending_takes[user.id]
-        take_status = logic.take(user.id, amount)
-
-        logic.log_take_attempt(
-            user_id=user.id,
-            user_name=user.name,
-            chat_id=update.effective_chat.id,
-            chat_type=update.effective_chat.type,
-            amount=amount,
-            is_successful=(take_status == USER_SUCCESS),
-            reason="None" if take_status == USER_SUCCESS else "Stupid" if take_status == USER_DUMB else "Greedy"
-        )
-
-        await process_take_status(update, context, take_status, amount)
-        return
 
     text = text.lower()
     if "dataa" in text or "huaidan" in text:
