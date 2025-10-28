@@ -224,7 +224,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     )
                     last_sent[key] = datetime.now(timezone.utc)
                 break
-    elif "pointu" in text:
+    elif "pointu" in text or "sowwie" in text:
         key = "pointu"
         if is_not_recent(key):
             await context.bot.send_sticker(
