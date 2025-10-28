@@ -13,6 +13,7 @@ client = MongoClient(MONGO_URI)
 db = client["Geiqianbot"]
 bank_collection = db["bank"]
 users_collection = db["users"]
+logs_collection = db["logs"]
 
 def get_bank_balance() -> int:
     record = bank_collection.find_one()
@@ -157,3 +158,15 @@ def set_user_balance(user_name, amount):
         {"$set": {"balance": amount}}
     )
     return amount
+
+def log_take_attempt(user_id, user_name, chat_id, chat_type, amount, is_successful, reason):
+    log_entry = {
+        "user_id": user_id,
+        "user_name": user_name,
+        "chat_id": chat_id,
+        "chat_type": chat_type,
+        "amount": amount,
+        "is_successful": is_successful,
+        "reason": reason
+    }
+    logs_collection.insert_one(log_entry)

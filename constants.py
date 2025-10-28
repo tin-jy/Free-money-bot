@@ -4,6 +4,7 @@ WITHDRAWAL_TOO_LARGE = "Ni greedy. Ni ask for too much"
 AMOUNT_QUERY = "How much? (in credits)"
 INVALID_VALUE_ERROR_MESSAGE = "How much? (in credits)"
 NO_MORE_ATTEMPTS_MESSAGE = "Ni greedy. Wait for next reset"
+USER_GREEDY_MESSAGE = "Ni greedy. Ni ask for too much"
 
 UNEXPECTED_ERROR_MESSAGE = "Unknown error occured."
 NO_USERS_FOUND = "No users found"

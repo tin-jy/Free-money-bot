@@ -13,7 +13,7 @@ async def hello(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(f'Hello {update.effective_user.first_name}')
 
 async def help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    response = f"Use /geiwoqian to get credits! Users get 3 attempts weekly that reset every Saturday, at 8pm SGT. Bank top ups are done daily at 8pm SGT."
+    response = f"Use /geiwoqian to get credits! Users get 3 attempts weekly that reset every Saturday at 8pm SGT. Bank top-ups are done daily at 8pm SGT."
     await update.message.reply_text(response)
 
 async def bad(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -40,7 +40,13 @@ async def process_take_status(update: Update, context: ContextTypes.DEFAULT_TYPE
             reply_to_message_id=update.message.id
         )   
     elif take_status == USER_GREEDY:
-        await update.message.reply_text(USER_GREEDY)
+        if random.randint(1, 4) == 1:
+            await context.bot.send_sticker(
+                chat_id=update.effective_chat.id,
+                sticker=random.choice(LAUGH_STICKERS),
+                reply_to_message_id=update.message.id
+            )
+        await update.message.reply_text(USER_GREEDY_MESSAGE)
     elif take_status == USER_SUCCESS:
         if amount >= success_threshold:
             await context.bot.send_sticker(
@@ -63,6 +69,15 @@ async def take(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     attempts_remaining = logic.get_remaining_attempts(user.id)
     assert attempts_remaining >= 0
     if attempts_remaining == 0:
+        logic.log_take_attempt(
+            user_id=user.id,
+            user_name=user.name,
+            chat_id=update.effective_chat.id,
+            chat_type=update.effective_chat.type,
+            amount=0,
+            is_successful=False,
+            reason="No attempts"
+        )
         await update.message.reply_text(NO_MORE_ATTEMPTS_MESSAGE)
         return
 
@@ -73,6 +88,17 @@ async def take(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             await update.message.reply_text(INVALID_VALUE_ERROR_MESSAGE)
             return
         take_status = logic.take(user.id, amount)
+
+        logic.log_take_attempt(
+            user_id=user.id,
+            user_name=user.name,
+            chat_id=update.effective_chat.id,
+            chat_type=update.effective_chat.type,
+            amount=amount,
+            is_successful=(take_status == USER_SUCCESS),
+            reason="None" if take_status == USER_SUCCESS else "Stupid" if take_status == USER_DUMB else "Greedy"
+        )
+        
         await process_take_status(update, context, take_status, amount)
         return
 
@@ -94,6 +120,17 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return
         del pending_takes[user.id]
         take_status = logic.take(user.id, amount)
+
+        logic.log_take_attempt(
+            user_id=user.id,
+            user_name=user.name,
+            chat_id=update.effective_chat.id,
+            chat_type=update.effective_chat.type,
+            amount=amount,
+            is_successful=(take_status == USER_SUCCESS),
+            reason="None" if take_status == USER_SUCCESS else "Stupid" if take_status == USER_DUMB else "Greedy"
+        )
+
         await process_take_status(update, context, take_status, amount)
         return
 

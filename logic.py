@@ -68,3 +68,6 @@ def reset_user_attempts():
 
 def set_user_balance(user_name, amount):
     database.set_user_balance(user_name, amount)
+
+def log_take_attempt(user_id, user_name, chat_id, chat_type, amount, is_successful, reason):
+    database.log_take_attempt(user_id, user_name, chat_id, chat_type, amount, is_successful, reason)
