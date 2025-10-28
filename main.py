@@ -23,8 +23,9 @@ def build_application():
     app.add_handler(CommandHandler("hello", hello))
     app.add_handler(CommandHandler("help", help))
     app.add_handler(CommandHandler("geiwoqian", take))
-    app.add_handler(CommandHandler("balance", get_balance))
+    app.add_handler(CommandHandler("balance", get_user_balance))
     app.add_handler(CommandHandler("leaderboard", generate_leaderboard))
+    app.add_handler(CommandHandler("history", get_user_history))
 
     # Hidden commands
     app.add_handler(CommandHandler("bad", bad))

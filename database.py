@@ -108,6 +108,18 @@ def rank_users(top_n: int = 10):
     )
     return top_users
 
+def rank_withdrawals(top_n: int = 10):
+    # Only successful withdrawals
+    top_withdrawals = list(
+        logs_collection.find(
+            {"is_successful": True},
+            {"_id": 0, "user_name": 1, "amount": 1, "timestamp": 1}
+        )
+        .sort("amount", -1)
+        .limit(top_n)
+    )
+    return top_withdrawals
+
 def top_up_bank():
     """
     Perform missed daily top-ups at 12:00 UTC.
@@ -166,7 +178,17 @@ def log_take_attempt(user_id, user_name, chat_id, chat_type, amount, is_successf
         "chat_id": chat_id,
         "chat_type": chat_type,
         "amount": amount,
+        "timestamp": datetime.now(timezone.utc),
         "is_successful": is_successful,
         "reason": reason
     }
     logs_collection.insert_one(log_entry)
+
+def get_user_history(user_id, limit=10):
+    cursor = logs_collection.find(
+        {
+            "user_id": user_id,
+            "reason": {"$ne": "No attempts"}  # Exclude entries with this reason
+        }
+    ).sort("timestamp", -1).limit(limit)
+    return list(cursor) or []

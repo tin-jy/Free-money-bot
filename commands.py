@@ -1,8 +1,10 @@
 from telegram import Update
 from telegram.ext import ContextTypes
+from telegram.helpers import escape_markdown
 from datetime import datetime, timedelta, timezone
 from collections import deque
 import logic
+import html
 from constants import *
 import random
 
@@ -30,7 +32,7 @@ async def help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 async def bad(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await context.bot.send_sticker(
         chat_id=update.effective_chat.id,
-        sticker=random.choice(BAD_STICKERES),
+        sticker=random.choice(BAD_STICKERS),
         reply_to_message_id=update.message.id
     )
 
@@ -145,7 +147,6 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await process_take_status(update, context, take_status, amount)
         return
 
-
     text = text.lower()
     if "dataa" in text or "huaidan" in text:
         key = "whack"
@@ -188,8 +189,8 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
             last_sent[key] = datetime.now(timezone.utc)
     elif text.startswith("i'm ") or text.startswith("im "):
-        if random.randint(1, 10) == 1:
-            remaining = " ".join(text.split()[1:])
+        remaining = " ".join(text.split()[1:])
+        if remaining and random.randint(1, 10) == 1:
             await context.bot.send_message(
                 chat_id=update.effective_chat.id,
                 text=f"Hi {remaining}".upper()
@@ -239,7 +240,6 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def add_attempt(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = update.effective_user
     if user.id != ADMIN_ID:
-        await update.message.reply_text("Admin only")
         return
     
     args = context.args
@@ -252,34 +252,100 @@ async def add_attempt(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     
     await update.message.reply_text(f"Added 1 attempt for {user.name}")
 
-async def get_balance(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def get_user_balance(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     logic.reset_user_attempts()
-    balance, attempts = logic.get_balance(update.effective_user.id)
+    balance, attempts = logic.get_user_balance(update.effective_user.id)
+    escaped_name = html.escape(update.effective_user.name)
     response = (
-        f"👤 *{update.effective_user.name}*\n"
-        f"💰 *Balance:* {balance}\n"
-        f"🎯 *Tries left:* {attempts}"
+        f"👤 <b>{escaped_name}</b>\n"
+        f"💰 <b>Balance:</b> {balance}\n"
+        f"🎯 <b>Tries left:</b> {attempts}"
     )
-
-    await update.message.reply_text(response, parse_mode="Markdown")
+    await update.message.reply_text(response, parse_mode="HTML")
 
 async def generate_leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    response = logic.generate_leaderboard()
-    await update.message.reply_text(response, parse_mode="Markdown")
+    top_users, top_withdrawals = logic.generate_leaderboard()
+    
+    num_width_users = len(str(len(top_users)))
+    num_width_withdrawals = len(str(len(top_withdrawals)))
+    
+    all_entries = top_users + top_withdrawals
+    max_name_len = max(len(entry.get("user_name", "")) for entry in all_entries) if all_entries else 0
+    
+    # Calculate max amount widths
+    max_balance_width = max(len(str(user.get("balance", 0))) for user in top_users) if top_users else 1
+    max_withdrawal_width = max(len(str(entry.get("amount", 0))) for entry in top_withdrawals) if top_withdrawals else 1
+    
+    lines = ["🏆 <b>Leaderboard</b> 🏆"]
+    
+    # --- Top Balances ---
+    if top_users:
+        lines.append("\n💰 <b>Top Balances</b>")
+        for i, user in enumerate(top_users, start=1):
+            name = html.escape(user.get("user_name", "Unknown"))
+            balance = user.get("balance", 0)
+            
+            if i <= 3:
+                medal = ["🥇", "🥈", "🥉"][i-1]
+            else:
+                medal = f"{i:>{num_width_users}}."
+            
+            lines.append(f"{medal} {name:<{max_name_len}} {balance:>{max_balance_width}}")
+    else:
+        lines.append("No users found.")
+    
+    # --- Top Withdrawals ---
+    if top_withdrawals:
+        lines.append("\n💸 <b>Top Withdrawals</b>")
+        for i, entry in enumerate(top_withdrawals, start=1):
+            name = html.escape(entry.get("user_name", "Unknown"))
+            amount = entry.get("amount", 0)
+            timestamp = entry.get("timestamp")
+            ago = html.escape(time_ago(timestamp) if timestamp else "Unknown time")
+            
+            if i <= 3:
+                medal = ["🥇", "🥈", "🥉"][i-1]
+            else:
+                medal = f"{i:>{num_width_withdrawals}}."
+            
+            lines.append(f"{medal} {name:<{max_name_len}} {amount:>{max_withdrawal_width}} ({ago})")
+    else:
+        lines.append("No withdrawals found.")
+    
+    response = "\n".join(lines)
+    await update.message.reply_text(response, parse_mode="HTML")
+
+async def get_user_history(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    attempt_list = logic.get_user_history(update.effective_user.id)
+    if not attempt_list:
+        escaped_name = html.escape(update.effective_user.name)
+        await update.message.reply_text(f"No history found for {escaped_name}", parse_mode="HTML")
+        return
+    
+    # Calculate the maximum amount width for alignment
+    max_amount_width = max(len(str(entry.get("amount", 0))) for entry in attempt_list)
+    
+    escaped_name = html.escape(update.effective_user.name)
+    response = f"📜 History for <b>{escaped_name}</b>\n\n"
+    
+    for attempt in attempt_list:
+        line = format_history_entry(attempt, max_amount_width)
+        response += f"<code>{line}</code>\n"
+    
+    await update.message.reply_text(response, parse_mode="HTML")
 
 async def get_bank_balance(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     logic.top_up_bank()
     user = update.effective_user
     if user.id != ADMIN_ID:
-        await update.message.reply_text("Admin only")
-    
+        return
     balance = logic.get_bank_balance()
     await update.message.reply_text(f'Bank has {balance}')    
     
 async def set_user_balance(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = update.effective_user
     if user.id != ADMIN_ID:
-        await update.message.reply_text("Admin only")
+        return
     
     args = context.args
     try:
@@ -319,7 +385,7 @@ async def handle_sticker(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                 return
             combo = recent_stickers[sticker_group]["combo"]
             chance = convert_combo_to_chance(combo)
-            print(chance)
+            # print(chance)
             if chance >= random.randint(1, 100):
                 await context.bot.send_sticker(
                 chat_id=update.effective_chat.id,
@@ -346,3 +412,33 @@ def convert_combo_to_chance(combo: int) -> int:
         return 33
     else:
         return 50
+    
+def time_ago(timestamp: datetime) -> str:
+    now = datetime.now(timezone.utc)
+    if timestamp.tzinfo is None:
+        timestamp = timestamp.replace(tzinfo=timezone.utc)
+    diff = now - timestamp
+
+    minutes = diff.total_seconds() // 60
+    hours = diff.total_seconds() // 3600
+    days = diff.total_seconds() // 86400
+
+    if minutes < 1:
+        return "Just now"
+    elif minutes < 60:
+        return f"{int(minutes)} minute{'s' if minutes != 1 else ''} ago"
+    elif hours < 24:
+        return f"{int(hours)} hour{'s' if hours != 1 else ''} ago"
+    else:
+        return f"{int(days)} day{'s' if days != 1 else ''} ago"
+
+def format_history_entry(entry, max_amount_width):
+    """Format a single history record into readable text."""
+    timestamp = entry.get("timestamp")
+
+    ago = time_ago(timestamp)
+    amount = entry.get("amount", 0)
+    success = entry.get("is_successful", False)
+
+    status_emoji = "✅" if success else "❌"
+    return f"{status_emoji} | {amount:>{max_amount_width}} | {ago}"
