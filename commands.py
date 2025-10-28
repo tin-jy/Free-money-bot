@@ -1,13 +1,24 @@
 from telegram import Update
 from telegram.ext import ContextTypes
 from datetime import datetime, timedelta, timezone
+from collections import deque
 import logic
 from constants import *
 import random
 
 pending_takes = {}
 last_sent = {}
-lookie = (1, datetime.now(timezone.utc)) # %chance, last used
+
+recent_messages = deque(maxlen=10)
+sample = {
+    "combo": 0,
+    "last_sent": datetime.now(timezone.utc)
+}
+recent_stickers = {
+    "lookie_stickers": sample.copy(),
+    "good_stickers": sample.copy(),
+    "angry_stickers": sample.copy()
+}
 
 async def hello(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(f'Hello {update.effective_user.first_name}')
@@ -105,8 +116,8 @@ async def take(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(AMOUNT_QUERY)
     pending_takes[user.id] = True
 
-def is_not_recent(key):
-    return key not in last_sent or last_sent[key] + timedelta(minutes=5) < datetime.now(timezone.utc)
+def is_not_recent(key, delay=5):
+    return key not in last_sent or last_sent[key] + timedelta(minutes=delay) < datetime.now(timezone.utc)
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
@@ -176,14 +187,36 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 sticker=random.choice(CHINI_STICKERS)
             )
             last_sent[key] = datetime.now(timezone.utc)
-    elif "cole joke" in text or text == "hi bored" or text == "hi tired":
-        key = "laugh"
-        if is_not_recent(key):
-            await context.bot.send_sticker(
+    elif text.startswith("i'm ") or text.startswith("im "):
+        if random.randint(1, 10) == 1:
+            remaining = " ".join(text.split()[1:])
+            await context.bot.send_message(
                 chat_id=update.effective_chat.id,
-                sticker=random.choice(LAUGH_STICKERS)
+                text=f"Hi {remaining}".upper()
             )
-            last_sent[key] = datetime.now(timezone.utc)
+    elif text.startswith("hi "):
+        remaining = " ".join(text.split()[1:])
+        with_apostrophe = f"i'm {remaining}"
+        without_apostrophe = f"im {remaining}"
+        if with_apostrophe in recent_messages or without_apostrophe in recent_messages:
+            key = "laugh"
+            if is_not_recent(key, delay=1):
+                await context.bot.send_sticker(
+                    chat_id=update.effective_chat.id,
+                    sticker=random.choice(LAUGH_STICKERS)
+                )
+                last_sent[key] = datetime.now(timezone.utc)
+    elif "cole joke" in text:
+        for message in recent_messages:
+            if "cold" in message:
+                key = "laugh"
+                if is_not_recent(key, delay=1):
+                    await context.bot.send_sticker(
+                        chat_id=update.effective_chat.id,
+                        sticker=random.choice(LAUGH_STICKERS)
+                    )
+                    last_sent[key] = datetime.now(timezone.utc)
+                break
     elif "pointu" in text:
         key = "pointu"
         if is_not_recent(key):
@@ -200,6 +233,8 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 sticker=random.choice(REMEMBER_STICKERS)
             )
             last_sent[key] = datetime.now(timezone.utc)
+
+    recent_messages.append(text)
 
 async def add_attempt(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = update.effective_user
@@ -257,28 +292,57 @@ async def set_user_balance(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
 async def handle_sticker(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     try:
-        # print(update.message.sticker.file_id)
-        if update.message.sticker.file_id in SLEEP_STICKERS:
+        sticker_id = update.message.sticker.file_id
+        # print(sticker_id)
+        now = datetime.now(timezone.utc)
+        sticker_group = None
+        if sticker_id in SLEEP_STICKERS:
             key = "sleep"
             if is_not_recent(key):
                 await context.bot.send_sticker(
                 chat_id=update.effective_chat.id,
                 sticker=CHICK_TUCKU
             )
-            last_sent[key] = datetime.now(timezone.utc)
-        elif update.message.sticker.file_id in LOOKIE_STICKERS:
-            global lookie
-            chance, last_combo = lookie
-            if last_combo + timedelta(minutes=1) < datetime.now(timezone.utc):
-                lookie = 1, datetime.now(timezone.utc)
-            elif chance >= random.randint(1, 100):
+            last_sent[key] = now
+
+        if sticker_id in LOOKIE_STICKERS:
+            sticker_group = "lookie_stickers"
+        elif sticker_id in GOOD_STICKERS:
+            sticker_group = "good_stickers"
+        elif sticker_id in ANGRY_STICKERS:
+            sticker_group = "angry_stickers"
+
+        if sticker_group:
+            if recent_stickers[sticker_group]["last_sent"] + timedelta(minutes=1) < now:
+                recent_stickers[sticker_group]["combo"] = 1
+                recent_stickers[sticker_group]["last_sent"] = now
+                return
+            combo = recent_stickers[sticker_group]["combo"]
+            chance = convert_combo_to_chance(combo)
+            print(chance)
+            if chance >= random.randint(1, 100):
                 await context.bot.send_sticker(
                 chat_id=update.effective_chat.id,
-                sticker=update.message.sticker.file_id
+                sticker=sticker_id
             )
-                lookie = 1, datetime.now(timezone.utc)
+                recent_stickers[sticker_group]["combo"] = 0
+                recent_stickers[sticker_group]["last_sent"] = now
             else:
-                lookie = 2 * chance, datetime.now(timezone.utc)
+                recent_stickers[sticker_group]["combo"] += 1
+                recent_stickers[sticker_group]["last_sent"] = now
+
     except Exception as e:
         print(e)
     
+def convert_combo_to_chance(combo: int) -> int:
+    # The return values represent chance in %
+    if combo < 1:
+        return 0
+    elif combo == 1:
+        return 20
+    elif combo == 2:
+        return 25
+    elif combo == 3:
+        return 33
+    else:
+        return 50
