@@ -159,7 +159,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = text.lower()
     if "dataa" in text or "huaidan" in text:
         key = "whack"
-        if is_not_recent(key):
+        if is_not_recent(key) and roll_chance(50):
             await context.bot.send_sticker(
                 chat_id=update.effective_chat.id,
                 sticker=random.choice(WHACK_STICKERS)
@@ -183,7 +183,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             last_sent[key] = datetime.now(timezone.utc)
     elif ("peppercorn" in text or "hangyodon" in text) and user.id != ADMIN_ID:
         key = "peppercorn"
-        if is_not_recent(key):
+        if is_not_recent(key) and roll_chance(50):
             await context.bot.send_sticker(
                 chat_id=update.effective_chat.id,
                 sticker=random.choice(PEPPERCORN_STICKERS)
@@ -251,9 +251,9 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 sticker=random.choice(REMEMBER_STICKERS)
             )
             last_sent[key] = datetime.now(timezone.utc)
-    elif "okie" in text or text == "keyi":
+    elif "okie" in text or text == "keyi" or text == "mhmm":
         key = "okie"
-        if is_not_recent(key):
+        if is_not_recent(key) and roll_chance(50):
             await context.bot.send_sticker(
                 chat_id=update.effective_chat.id,
                 sticker=random.choice(OKIE_STIKCERS)
