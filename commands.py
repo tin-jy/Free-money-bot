@@ -30,7 +30,7 @@ async def hello(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(f'Hello {update.effective_user.first_name}')
 
 async def help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    response = f"Use /geiwoqian to get credits! Users get 3 attempts weekly that reset every Saturday at 8pm SGT. The bot is topped-up daily at 8pm SGT."
+    response = f"Use /geiwoqian to get credits! Users get 3 attempts weekly that reset every Saturday at 8pm SGT. Bot top-ups are randomized."
     await update.message.reply_text(response)
 
 async def bad(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:

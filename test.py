@@ -17,7 +17,7 @@ bank_collection.delete_many({})
 bank_collection.insert_one({
     "balance": 2,
     "lifetime_total": 174,
-    "next_top_up": datetime(2025, 11, 1, 12, 0, 0, tzinfo=timezone.utc),
+    "next_top_up": datetime(2025, 10, 29, 12, 0, 0, tzinfo=timezone.utc),
     "last_weekly_reset": datetime(2025, 10, 25, 12, 0, 0, tzinfo=timezone.utc)
 })
 
