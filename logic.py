@@ -43,7 +43,8 @@ def generate_leaderboard(top_n: int = 10):
     return top_users, top_withdrawals
 
 def top_up_bank():
-    database.top_up_bank()
+    database.top_up_bank_random()
+    # can choose between random or daily
 
 def reset_user_attempts():
     database.reset_user_attempts()

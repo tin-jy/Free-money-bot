@@ -6,6 +6,7 @@ import os
 import time
 import logging
 import asyncio
+from constants import *
 
 load_dotenv()
 TOKEN = os.getenv("BOT_TOKEN")
@@ -16,16 +17,28 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+WHITELISTED_USER_IDS = {NUT, KAI, COLE, LAS, HONG, ELLE}
+ADMIN_IDS = {NUT}
+
+# class WhitelistFilter(filters.UpdateFilter):
+#     def filter(self, update: Update) -> bool:
+#         user = update.effective_user
+#         return user and user.id in WHITELISTED_USER_IDS
+
+
 def build_application():
     app = ApplicationBuilder().token(TOKEN).build()
+
+    whitelist_filter = filters.User(user_id=WHITELISTED_USER_IDS)
+    admin_filter = filters.User(user_id=ADMIN_IDS)
 
     # Regular commands
     app.add_handler(CommandHandler("hello", hello))
     app.add_handler(CommandHandler("help", help))
-    app.add_handler(CommandHandler("geiwoqian", take))
-    app.add_handler(CommandHandler("balance", get_user_balance))
-    app.add_handler(CommandHandler("leaderboard", generate_leaderboard))
-    app.add_handler(CommandHandler("history", get_user_history))
+    app.add_handler(CommandHandler("geiwoqian", take, filters=whitelist_filter))
+    app.add_handler(CommandHandler("balance", get_user_balance, filters=whitelist_filter))
+    app.add_handler(CommandHandler("leaderboard", generate_leaderboard, filters=whitelist_filter))
+    app.add_handler(CommandHandler("history", get_user_history, filters=whitelist_filter))
 
     # Hidden commands
     app.add_handler(CommandHandler("bad", bad))
@@ -38,9 +51,9 @@ def build_application():
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
     # Admin commands
-    app.add_handler(CommandHandler("addattempt", add_attempt))
-    app.add_handler(CommandHandler("setbalance", set_user_balance))
-    app.add_handler(CommandHandler("bank", get_bank_balance))
+    app.add_handler(CommandHandler("addattempt", add_attempt, filters=admin_filter))
+    app.add_handler(CommandHandler("setbalance", set_user_balance, filters=admin_filter))
+    app.add_handler(CommandHandler("bank", get_bank_balance, filters=admin_filter))
 
     async def error_handler(update, context):
         err = context.error

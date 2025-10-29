@@ -192,3 +192,34 @@ def get_user_history(user_id, limit=10):
         }
     ).sort("timestamp", -1).limit(limit)
     return list(cursor) or []
+
+def generate_next_gamma(avg, shape=2.0):
+    scale = avg / shape
+    return random.gammavariate(shape, scale)
+
+def top_up_bank_random():
+    record = bank_collection.find_one({})
+    assert record
+
+    now = datetime.now(timezone.utc)
+    next_top_up = record.get("next_top_up", now)
+    if next_top_up.tzinfo is None:
+        next_top_up = next_top_up.replace(tzinfo=timezone.utc)
+
+    total_amount = 0
+    while next_top_up < now:
+        amount = random.expovariate(1 / MEAN_DAILY_TOP_UP) # 30
+        amount = max(min(int(amount), MAX_DAILY_TOP_UP), 1) # 300
+        total_amount += amount
+        time_to_next_in_minutes = generate_next_gamma(avg=1440)
+        next_top_up += timedelta(minutes=time_to_next_in_minutes)
+    
+    if total_amount:
+        bank_collection.update_one({}, {
+            "$set": {"next_top_up": next_top_up},
+            "$inc": {"balance": total_amount}
+        })
+
+    
+
+

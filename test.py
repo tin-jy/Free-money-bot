@@ -15,9 +15,9 @@ bank_collection.delete_many({})
 
 # Insert your reset bank document
 bank_collection.insert_one({
-    "balance": 174,
-    "last_update": datetime(2025, 10, 28, 12, 0, 0, tzinfo=timezone.utc),
+    "balance": 2,
     "lifetime_total": 174,
+    "next_top_up": datetime(2025, 11, 1, 12, 0, 0, tzinfo=timezone.utc),
     "last_weekly_reset": datetime(2025, 10, 25, 12, 0, 0, tzinfo=timezone.utc)
 })
 

@@ -263,10 +263,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     recent_messages.append(text)
 
 async def add_attempt(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    user = update.effective_user
-    if user.id != ADMIN_ID:
-        return
-    
+    user = update.effective_user  
     args = context.args
     try:
         user_name = args[0]
@@ -361,17 +358,12 @@ async def get_user_history(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
 async def get_bank_balance(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     logic.top_up_bank()
-    user = update.effective_user
-    if user.id != ADMIN_ID:
-        return
+
     balance = logic.get_bank_balance()
     await update.message.reply_text(f'Bank has {balance}')    
     
 async def set_user_balance(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = update.effective_user
-    if user.id != ADMIN_ID:
-        return
-    
     args = context.args
     try:
         user_name = args[0]
