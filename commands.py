@@ -204,7 +204,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             last_sent[key] = datetime.now(timezone.utc)
     elif text.startswith("i'm ") or text.startswith("im "):
         remaining = " ".join(text.split()[1:])
-        if remaining and roll_chance(10):
+        if remaining and roll_chance(25):
             await context.bot.send_message(
                 chat_id=update.effective_chat.id,
                 text=f"Hi {remaining}".upper()
@@ -248,7 +248,15 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 sticker=random.choice(REMEMBER_STICKERS)
             )
             last_sent[key] = datetime.now(timezone.utc)
-
+    elif "okie" in text or text == "keyi":
+        key = "okie"
+        if is_not_recent(key):
+            await context.bot.send_sticker(
+                chat_id=update.effective_chat.id,
+                sticker=random.choice(OKIE_STIKCERS)
+            )
+            last_sent[key] = datetime.now(timezone.utc)
+            
     recent_messages.append(text)
 
 async def add_attempt(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
