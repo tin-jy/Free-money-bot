@@ -57,7 +57,7 @@ async def process_take_status(update: Update, context: ContextTypes.DEFAULT_TYPE
             reply_to_message_id=update.message.id
         )   
     elif take_status == USER_GREEDY:
-        if random.randint(1, 4) == 1:
+        if roll_chance(25):
             await context.bot.send_sticker(
                 chat_id=update.effective_chat.id,
                 sticker=random.choice(LAUGH_STICKERS),
@@ -194,9 +194,17 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 sticker=random.choice(CHINI_STICKERS)
             )
             last_sent[key] = datetime.now(timezone.utc)
+    elif "woyao" in text or "woyeyao" in text or "wodene" in text:
+        key = "woyao"
+        if is_not_recent(key) and roll_chance(50):
+            await context.bot.send_sticker(
+                chat_id=update.effective_chat.id,
+                sticker=random.choice(WOYAO__STICKERS)
+            )
+            last_sent[key] = datetime.now(timezone.utc)
     elif text.startswith("i'm ") or text.startswith("im "):
         remaining = " ".join(text.split()[1:])
-        if remaining and random.randint(1, 10) == 1:
+        if remaining and roll_chance(10):
             await context.bot.send_message(
                 chat_id=update.effective_chat.id,
                 text=f"Hi {remaining}".upper()
@@ -391,8 +399,7 @@ async def handle_sticker(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                 return
             combo = recent_stickers[sticker_group]["combo"]
             chance = convert_combo_to_chance(combo)
-            # print(chance)
-            if chance >= random.randint(1, 100):
+            if roll_chance(chance):
                 await context.bot.send_sticker(
                 chat_id=update.effective_chat.id,
                 sticker=sticker_id
@@ -448,3 +455,6 @@ def format_history_entry(entry, max_amount_width):
 
     status_emoji = "✅" if success else "❌"
     return f"{status_emoji} | {amount:>{max_amount_width}} | {ago}"
+
+def roll_chance(chance: int) -> bool:
+    return chance >= random.randint(1, 00)
