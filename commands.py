@@ -457,4 +457,4 @@ def format_history_entry(entry, max_amount_width):
     return f"{status_emoji} | {amount:>{max_amount_width}} | {ago}"
 
 def roll_chance(chance: int) -> bool:
-    return chance >= random.randint(1, 00)
+    return chance >= random.randint(1, 100)
