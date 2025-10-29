@@ -60,3 +60,6 @@ def log_take_attempt(user_id, user_name, chat_id, chat_type, amount, is_successf
 
 def get_user_history(user_id):
     return database.get_user_history(user_id)
+
+def get_withdrawal_history(last_n=10):
+    return database.get_withdrawal_history(last_n)

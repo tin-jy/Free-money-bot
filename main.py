@@ -39,6 +39,7 @@ def build_application():
     app.add_handler(CommandHandler("balance", get_user_balance))
     app.add_handler(CommandHandler("leaderboard", generate_leaderboard))
     app.add_handler(CommandHandler("history", get_user_history))
+    app.add_handler(CommandHandler("recent", get_withdrawl_history))
 
     # Hidden commands
     app.add_handler(CommandHandler("bad", bad))

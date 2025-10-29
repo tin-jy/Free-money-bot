@@ -125,6 +125,17 @@ def rank_withdrawals(top_n: int = 10):
     )
     return top_withdrawals
 
+def get_withdrawal_history(last_n: int = 10):
+    recent_withdrawals = list(
+        logs_collection.find(
+            {"reason": {"$ne": "No attempts"}},
+            {"_id": 0, "user_name": 1, "amount": 1, "timestamp": 1, "is_successful": 1, "reason": 1}
+        )
+        .sort("timestamp", -1)  # newest first
+        .limit(last_n)
+    )
+    return recent_withdrawals
+
 def top_up_bank():
     """
     Perform missed daily top-ups at 12:00 UTC.

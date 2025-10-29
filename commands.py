@@ -167,7 +167,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             last_sent[key] = datetime.now(timezone.utc)
     elif text == "sad":
         key = "sad"
-        if is_not_recent(key):
+        if is_not_recent(key) and roll_chance(50):
             await context.bot.send_sticker(
                 chat_id=update.effective_chat.id,
                 sticker=random.choice(SAD_STICKERS)
@@ -337,6 +337,22 @@ async def generate_leaderboard(update: Update, context: ContextTypes.DEFAULT_TYP
     response = "\n".join(lines)
     await update.message.reply_text(response, parse_mode="HTML")
 
+async def get_withdrawl_history(update: Update, context:ContextTypes.DEFAULT_TYPE) -> None:
+    withdrawal_list = logic.get_withdrawal_history()
+    if not withdrawal_list:
+        await update.message.reply_text("No history found")
+        return
+
+    max_user_width = max(len(entry.get("user_name", "")) for entry in withdrawal_list)
+    max_amount_width = max(len(str(entry.get("amount", 0))) for entry in withdrawal_list)
+    
+    response = "🏦 <b>Recent Withdrawals</b>\n\n"
+    for entry in withdrawal_list:
+        line = format_withdrawal_entry(entry, max_user_width, max_amount_width)
+        response += f"<code>{line}</code>\n"
+
+    await update.message.reply_text(response, parse_mode="HTML")
+
 async def get_user_history(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     attempt_list = logic.get_user_history(update.effective_user.id)
     if not attempt_list:
@@ -449,11 +465,30 @@ def time_ago(timestamp: datetime) -> str:
     if minutes < 1:
         return "Just now"
     elif minutes < 60:
-        return f"{int(minutes)} minute{'s' if minutes != 1 else ''} ago"
+        return f"{int(minutes)} min{'s' if minutes != 1 else ''} ago"
     elif hours < 24:
-        return f"{int(hours)} hour{'s' if hours != 1 else ''} ago"
+        return f"{int(hours)} hr{'s' if hours != 1 else ''} ago"
     else:
         return f"{int(days)} day{'s' if days != 1 else ''} ago"
+
+def short_time_ago(timestamp: datetime) -> str:
+    now = datetime.now(timezone.utc)
+    if timestamp.tzinfo is None:
+        timestamp = timestamp.replace(tzinfo=timezone.utc)
+    diff = now - timestamp
+
+    mins = diff.total_seconds() // 60
+    hrs = diff.total_seconds() // 3600
+    days = diff.total_seconds() // 86400
+
+    if mins < 1:
+        return "Now"
+    elif mins < 60:
+        return f"{int(mins)}m"
+    elif hrs < 48:
+        return f"{int(hrs)}h"
+    else:
+        return f"{int(days)}d"
     
 def time_till(timestamp: datetime) -> str:
     now = datetime.now(timezone.utc)
@@ -472,7 +507,6 @@ def time_till(timestamp: datetime) -> str:
         return f"{int(hours)} hour{'s' if hours != 1 else ''}"
 
 def format_history_entry(entry, max_amount_width):
-    """Format a single history record into readable text."""
     timestamp = entry.get("timestamp")
 
     ago = time_ago(timestamp)
@@ -481,6 +515,16 @@ def format_history_entry(entry, max_amount_width):
 
     status_emoji = "✅" if success else "❌"
     return f"{status_emoji} | {amount:>{max_amount_width}} | {ago}"
+
+def format_withdrawal_entry(entry, max_user_width, max_amount_width):
+    user = html.escape(entry.get("user_name", "Unknown")[:15])
+    success = "✅" if entry.get("is_successful") else "❌"
+    amount = str(entry.get("amount", 0)).rjust(max_amount_width)
+    
+    timestamp = entry.get("timestamp")
+    ago = short_time_ago(timestamp)
+
+    return f"{user.ljust(max_user_width)} {success} | {amount} | {ago}"
 
 def roll_chance(chance: int) -> bool:
     return chance >= random.randint(1, 100)
