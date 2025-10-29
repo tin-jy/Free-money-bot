@@ -170,7 +170,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 sticker=random.choice(SAD_STICKERS)
             )
             last_sent[key] = datetime.now(timezone.utc)
-    elif "have no proo" in text:
+    elif "have no proo" in text or "meiyou proo" in text:
         key = "proof"
         if is_not_recent(key):
             await context.bot.send_sticker(
