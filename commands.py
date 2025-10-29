@@ -459,7 +459,7 @@ def time_till(timestamp: datetime) -> str:
     now = datetime.now(timezone.utc)
     if timestamp.tzinfo is None:
         timestamp = timestamp.replace(tzinfo=timezone.utc)
-    diff = now - timestamp
+    diff = timestamp - now
 
     minutes = diff.total_seconds() // 60
     hours = diff.total_seconds() // 3600
