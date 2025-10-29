@@ -199,7 +199,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if is_not_recent(key) and roll_chance(50):
             await context.bot.send_sticker(
                 chat_id=update.effective_chat.id,
-                sticker=random.choice(WOYAO__STICKERS)
+                sticker=random.choice(WOYAO_STICKERS)
             )
             last_sent[key] = datetime.now(timezone.utc)
     elif text.startswith("i'm ") or text.startswith("im "):
