@@ -17,10 +17,15 @@ logs_collection = db["logs"]
 
 def get_bank_balance() -> int:
     record = bank_collection.find_one()
-    if record:
-        balance = record.get("balance", 0)
-        return balance
-    return -1
+    assert record
+
+    return record.get("balance", 0)
+
+def get_bank_next_top_up() -> datetime:
+    record = bank_collection.find_one()
+    assert record
+
+    return record.get("next_top_up", None)
 
 def decrement_bank_balance(amount: int) -> bool:
     result = bank_collection.update_one(

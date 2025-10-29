@@ -36,6 +36,9 @@ def get_user_balance(user_id):
 def get_bank_balance():
     return database.get_bank_balance()
 
+def get_bank_next_top_up():
+    return database.get_bank_next_top_up()
+
 def generate_leaderboard(top_n: int = 10):
     # --- Top balances ---
     top_users = database.rank_users(top_n)

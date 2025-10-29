@@ -358,9 +358,16 @@ async def get_user_history(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
 async def get_bank_balance(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     logic.top_up_bank()
-
     balance = logic.get_bank_balance()
-    await update.message.reply_text(f'Bank has {balance}')    
+    next_top_up = logic.get_bank_next_top_up()
+    assert isinstance(next_top_up, datetime)
+
+    if next_top_up.tzinfo is None:
+        next_top_up = next_top_up.replace(tzinfo=timezone.utc)
+
+    line = time_till(next_top_up)
+
+    await update.message.reply_text(f'Bank balance: {balance}\nTime to next top-up: {line}')    
     
 async def set_user_balance(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = update.effective_user
@@ -447,6 +454,22 @@ def time_ago(timestamp: datetime) -> str:
         return f"{int(hours)} hour{'s' if hours != 1 else ''} ago"
     else:
         return f"{int(days)} day{'s' if days != 1 else ''} ago"
+    
+def time_till(timestamp: datetime) -> str:
+    now = datetime.now(timezone.utc)
+    if timestamp.tzinfo is None:
+        timestamp = timestamp.replace(tzinfo=timezone.utc)
+    diff = now - timestamp
+
+    minutes = diff.total_seconds() // 60
+    hours = diff.total_seconds() // 3600
+
+    if minutes < 1:
+        return "Now"
+    elif minutes < 60:
+        return f"{int(minutes)} minute{'s' if minutes != 1 else ''}"
+    else:
+        return f"{int(hours)} hour{'s' if hours != 1 else ''}"
 
 def format_history_entry(entry, max_amount_width):
     """Format a single history record into readable text."""
