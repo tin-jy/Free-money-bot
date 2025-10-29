@@ -30,7 +30,7 @@ async def hello(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(f'Hello {update.effective_user.first_name}')
 
 async def help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    response = f"Use /geiwoqian to get credits! Users get 3 attempts weekly that reset every Saturday at 8pm SGT. Bank top-ups are done daily at 8pm SGT."
+    response = f"Use /geiwoqian to get credits! Users get 3 attempts weekly that reset every Saturday at 8pm SGT. The bot is topped-up daily at 8pm SGT."
     await update.message.reply_text(response)
 
 async def bad(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -126,6 +126,9 @@ def is_not_recent(key, delay=5):
     return key not in last_sent or last_sent[key] + timedelta(minutes=delay) < datetime.now(timezone.utc)
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message or not update.message.text:
+        return
+
     user = update.effective_user
     text = update.message.text
 
@@ -256,7 +259,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 sticker=random.choice(OKIE_STIKCERS)
             )
             last_sent[key] = datetime.now(timezone.utc)
-            
+
     recent_messages.append(text)
 
 async def add_attempt(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
