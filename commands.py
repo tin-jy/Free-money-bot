@@ -402,7 +402,7 @@ async def handle_sticker(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         elif sticker_id in ANGRY_STICKERS:
             sticker_group = "angry_stickers"
 
-        if sticker_group:
+        if sticker_group and is_not_recent(sticker_group):
             if recent_stickers[sticker_group]["last_sent"] + timedelta(minutes=1) < now:
                 recent_stickers[sticker_group]["combo"] = 1
                 recent_stickers[sticker_group]["last_sent"] = now
