@@ -175,7 +175,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             last_sent[key] = datetime.now(timezone.utc)
     elif "have no proo" in text or "meiyou proo" in text:
         key = "proof"
-        if is_not_recent(key):
+        if is_not_recent(key) and roll_chance(50):
             await context.bot.send_sticker(
                 chat_id=update.effective_chat.id,
                 sticker=random.choice(PROOF_STICKERS)
@@ -191,7 +191,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             last_sent[key] = datetime.now(timezone.utc)
     elif "chini" in text:
         key = "chini"
-        if is_not_recent(key):
+        if is_not_recent(key) and roll_chance(50):
             await context.bot.send_sticker(
                 chat_id=update.effective_chat.id,
                 sticker=random.choice(CHINI_STICKERS)
@@ -237,7 +237,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 break
     elif "pointu" in text or "sowwie" in text:
         key = "pointu"
-        if is_not_recent(key):
+        if is_not_recent(key) and roll_chance(50):
             await context.bot.send_sticker(
                 chat_id=update.effective_chat.id,
                 sticker=random.choice(POINTU_STICKERS)
@@ -245,7 +245,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             last_sent[key] = datetime.now(timezone.utc)
     elif "remember this" in text:
         key = "remember"
-        if is_not_recent(key):
+        if is_not_recent(key) and roll_chance(50):
             await context.bot.send_sticker(
                 chat_id=update.effective_chat.id,
                 sticker=random.choice(REMEMBER_STICKERS)
