@@ -10,10 +10,8 @@ client = MongoClient(MONGO_URI)
 db = client["Geiqianbot"]
 bank_collection = db["bank"]
 
-# Delete all existing documents in the bank collection (optional)
 bank_collection.delete_many({})
 
-# Insert your reset bank document
 bank_collection.insert_one({
     "balance": 2,
     "lifetime_total": 174,

@@ -155,7 +155,7 @@ def top_up_bank():
     while last_update + timedelta(days=1) <= now:
         amount = random.expovariate(1 / MEAN_DAILY_TOP_UP)
         # To ensure min 1, max 150
-        amount = max(min(int(round(amount)), MAX_DAILY_TOP_UP), 1)
+        amount = max(min(int(round(amount)), DAILY_TOP_UP), 1)
         increment_bank_balance(amount)
         increment_lifetime_total(amount)
         last_update += timedelta(days=1)
@@ -225,7 +225,7 @@ def top_up_bank_random():
     total_amount = 0
     while next_top_up < now:
         amount = random.expovariate(1 / MEAN_DAILY_TOP_UP) # 30
-        amount = max(min(int(amount), MAX_DAILY_TOP_UP), 1) # 300
+        amount = max(min(int(amount), DAILY_TOP_UP), 1) # 300
         total_amount += amount
         time_to_next_in_minutes = generate_next_gamma(avg=1440)
         next_top_up += timedelta(minutes=time_to_next_in_minutes)
