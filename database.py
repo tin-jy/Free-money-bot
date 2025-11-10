@@ -14,6 +14,7 @@ db = client["Geiqianbot"]
 bank_collection = db["bank"]
 users_collection = db["users"]
 logs_collection = db["logs"]
+drop_ball_collection = db["dropball"]
 
 def get_bank_balance() -> int:
     record = bank_collection.find_one()
@@ -68,6 +69,13 @@ def decrement_remaining_attempts(user_id: int):
     result = users_collection.update_one(
         {"user_id": user_id},
         {"$inc": {"attempts": -1}}
+    )
+    return result
+
+def decerement_user_balance(user_id: int, amount):
+    result = users_collection.update_one(
+        {"user_id": user_id},
+        {"$inc": {"balance": amount * -1}}
     )
     return result
 
@@ -236,6 +244,35 @@ def top_up_bank_random():
             "$inc": {"balance": total_amount}
         })
 
-    
+def insert_drop_ball_game(game):
+    drop_ball_collection.insert_one(game)
 
 
+def get_dropball_net_profit():
+    collection = db["dropball"]
+
+    pipeline = [
+        {
+            "$project": {
+                "profit": {
+                    "$multiply": [
+                        "$multiplier",
+                        { "$subtract": ["$num_of_balls", "$cashout_amount"] }
+                    ]
+                }
+            }
+        },
+        {
+            "$group": {
+                "_id": None,
+                "total_profit": { "$sum": "$profit" }
+            }
+        }
+    ]
+
+    result = list(collection.aggregate(pipeline))
+
+    if result:
+        return result[0]["total_profit"]
+    else:
+        return 0
