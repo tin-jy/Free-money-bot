@@ -306,6 +306,8 @@ async def help_aim(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 async def db_rules(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     message = f"""
+NOTICE: This game costs credits to play
+
 /startdropball to start
 /drop twice to drop a ball
 /cashout to cashout
@@ -319,7 +321,7 @@ Payouts:
 8 in a row | 400
 9 in a row | 1200
 
-Details: Time the interval between /drop commands to aim. After 1 second, the ball starts in the middle and swings left. Releasing before 1s or after 17s will cause the ball to randomly fire. The ball completes 1 oscillation every 8 seconds.
+Details: Each dropped ball costs 1 credit. Time the interval between /drop commands to aim. After 1 second, the ball starts in the middle and swings left. Releasing before 1s or after 17s will cause the ball to randomly fire. The ball completes 1 oscillation every 8 seconds.
     """
     await update.message.reply_text(message)
 
