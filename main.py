@@ -40,7 +40,7 @@ def build_application():
     app.add_handler(CommandHandler("startdropball", start_drop_ball))
     app.add_handler(CommandHandler("drop", drop_ball))
     app.add_handler(CommandHandler("cashout", cash_out))
-    # app.add_handler(CommandHandler("helpaim", help_aim))
+    app.add_handler(CommandHandler("helpaim", help_aim))
     app.add_handler(CommandHandler("dbhelp", db_rules))
     app.add_handler(CommandHandler("dbstats", db_stats))
 

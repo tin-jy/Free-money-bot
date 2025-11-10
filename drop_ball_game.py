@@ -269,7 +269,7 @@ async def drop_ball(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         timediff = data.get("timediff")
         pos = data.get("pos")
         formatted_game_data = format_game_state(game_state, bin, False)
-        message = f"<pre>Time: {round(timediff.total_seconds(), 3)}s\nAim:  {round(pos + 5, 3)}\nHit: {bin + 1}\n\n{formatted_game_data}</pre>"
+        message = f"<pre>Time: {round(timediff.total_seconds(), 3)}s\nAim: {round(pos + 5, 3)}\nHit: {bin + 1}\n\n{formatted_game_data}</pre>"
         await update.message.reply_text(message, parse_mode="HTML")
         return
     if status == JACKPOT:
@@ -279,7 +279,7 @@ async def drop_ball(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         timediff = data.get("timediff")
         pos = data.get("pos")
         formatted_game_data = format_game_state(game_state, bin, False)
-        message = f"<pre>JACKPOT!!!\n\nTime: {round(timediff.total_seconds(), 3)}s\nAim:  {round(pos + 5, 3)}\nHit: {bin + 1}\n\n{formatted_game_data}</pre>"
+        message = f"<pre>JACKPOT!!!\n\nTime: {round(timediff.total_seconds(), 3)}s\nAim: {round(pos + 5, 3)}\nHit: {bin + 1}\n\n{formatted_game_data}</pre>"
         await update.message.reply_text(message, parse_mode="HTML")
         await context.bot.send_sticker(
             chat_id=update.effective_chat.id,
@@ -302,7 +302,8 @@ async def cash_out(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(f"Cashed out for {amount} credits!")
 
 async def help_aim(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    pass
+    with open("dropball chance distribution.png", "rb") as f:
+        await update.message.reply_photo(photo=f)
 
 async def db_rules(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     message = f"""
@@ -311,6 +312,7 @@ NOTICE: This game costs credits to play
 /startdropball to start
 /drop twice to drop a ball
 /cashout to cashout
+/helpaim for aim guidance
 
 Payouts:
 3 in a row | 6
@@ -349,7 +351,8 @@ def format_game_state(game_state, latest_bin, game_over: bool):
             formatted_string += "o "
         else:
             formatted_string += "_ "
-    return formatted_string[:-1]
+    formatted_string += "\n1 2 3 4 5 6 7 8 9"
+    return formatted_string
 
 def execute_help_aim(target_bin: float):
     if target_bin < 1 or target_bin > 9:
