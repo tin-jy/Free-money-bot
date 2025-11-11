@@ -243,7 +243,7 @@ async def drop_ball(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user_id = update.effective_user.id
     status, data = execute_drop_ball(user_id)
     if status == NO_EXISTING_BALL_DROP_GAME:
-        await update.message.reply_text("Use /startdropball to start a game first")
+        await update.message.reply_text("Use /startlucky9 to start a game first")
         return
     if status == NOT_ENOUGH_TO_DROP:
         await update.message.reply_text("You don't have enough credits")
@@ -260,7 +260,7 @@ async def drop_ball(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         formatted_game_data = format_game_state(game_state, bin, True)
         message = f"<pre>GAME OVER\n\nTime: {round(timediff.total_seconds(), 3)}s\nAim: {round(pos + 5, 3)}\nHit: {bin + 1}\n\n{formatted_game_data}</pre>"
         await update.message.reply_text(message, parse_mode="HTML")
-        await update.message.reply_text("/startdropball to play again")
+        await update.message.reply_text("/startlucky9 to play again")
         return
     if status == SECOND_DROP_SUCCESS:
         assert data
@@ -309,7 +309,7 @@ async def db_rules(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     message = f"""
 NOTICE: This game costs credits to play
 
-/startdropball to start
+/startlucky9 to start
 /drop twice to drop a ball
 /cashout to cashout
 /helpaim for aim guidance
