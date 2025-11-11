@@ -339,7 +339,7 @@ async def lucky9_stats(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 Balls dropped: {stats.get("lifetime_spent")}
 Lifetime cashout: {stats.get("lifetime_cashout")}
 Lifetime net: {stats.get("lifetime_net")}
-Cashout percentage: {stats.get("cashout_percentage")}
+Cashout percentage: {round(stats.get("cashout_percentage") * 100, 2)}%
 """
     await update.message.reply_text(message)
 
