@@ -34,23 +34,17 @@ JACKPOT = 6
 
 JACKPOT_PRIZE = 1200
 
-def create_game(user_id: int, user_name: str, multipler=1):
-    net_profit = get_dropball_net_profit()
-    if net_profit < -1000:
-        return UNPROFITABLE
-    for game in games:
-        if game.get("user_id") == user_id:
-            return GAME_ALREADY_EXISTS
+def create_game(user_id: int, user_name: str, message_id: str, multipler=1):
     new_game = {
         "user_id": user_id,
         "user_name": user_name,
+        "message_id": message_id,
         "game_state": [False, False, False, False, False, False, False, False, False],
         "first_drop": None,
         "multiplier": multipler,
         "num_of_balls": 0
     }
     games.append(new_game)
-    return GAME_STARTED
 
 def execute_drop_ball(user_id: int):
     global games
@@ -237,36 +231,57 @@ def sample_bin_at_time(
             return i, probs
     return len(probs) - 1, probs
 
+async def verify_valid_user(update: Update) -> bool:
+    query = update.callback_query
+
+    user_id = query.from_user.id
+    message_id = query.message.message_id
+
+    game = next((g for g in games if g["user_id"] == user_id), None)
+
+    if game is None:
+        await query.answer("You have no games active!", show_alert=True)
+        return False
+
+    if game["message_id"] != message_id:
+        await query.answer("This is not your game!", show_alert=True)
+        return False
+    
+    return True
+    
+    
 async def start_drop_ball(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     user_name = update.effective_user.name
 
-    result = create_game(user_id, user_name)
-
-    if result == UNPROFITABLE:
+    # check if game can start
+    net_profit = get_dropball_net_profit()
+    if net_profit < -1000:
         await update.message.reply_text("Game is suspended due to unexpected losses")
         return
+    
+    for game in games:
+        if game.get("user_id") == user_id:
+            await update.message.reply_text("Game already exists.")
+            return
+    
 
-    if result == GAME_ALREADY_EXISTS:
-        await update.message.reply_text("Game already exists.")
-        return
-
-    await update.message.reply_text(
+    message = await update.message.reply_text(
         "Game started! Use the buttons to play.",
         reply_markup=GAME_KEYBOARD
     )
 
+    create_game(user_id, user_name, message.message_id)
+
 
 async def drop_ball(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if not await verify_valid_user(update):
+        return
+    
     query = update.callback_query
 
     user_id = query.from_user.id
     
-    game = next((g for g in games if g["user_id"] == user_id), None)
-    if game is None:
-        await query.answer("This is not your game!", show_alert=True)
-        return
-
     status, data = execute_drop_ball(user_id)
     
     if status == NO_EXISTING_BALL_DROP_GAME:
@@ -330,14 +345,12 @@ async def drop_ball(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         return
     
 async def cash_out(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if not await verify_valid_user(update):
+        return
+    
     query = update.callback_query
 
     user_id = query.from_user.id
-
-    game = next((g for g in games if g["user_id"] == user_id), None)
-    if game is None:
-        await query.answer("This is not your game!", show_alert=True)
-        return
 
     status, amount = execute_cash_out(user_id)
 
