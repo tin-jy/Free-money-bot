@@ -259,7 +259,6 @@ async def start_drop_ball(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def drop_ball(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
-    await query.answer()
 
     user_id = query.from_user.id
     
@@ -280,8 +279,10 @@ async def drop_ball(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         # await query.edit_message_reply_markup(
         #     reply_markup=GAME_KEYBOARD
         # )
+        await query.answer()
         return
     
+    await query.answer()
     assert data
     game_state = data["game_state"]
     bin = data["bin"]
@@ -330,7 +331,6 @@ async def drop_ball(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     
 async def cash_out(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
-    await query.answer()
 
     user_id = query.from_user.id
 
@@ -345,9 +345,10 @@ async def cash_out(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await query.answer("No active game!", show_alert=True)
         return
     if status == CANNOT_CASH_OUT:
-        await query.message.reply_text("You need a chain of at least 3 to cash out")
+        await query.answer("You need a chain of at least 3 to cash out", show_alert=True)
         return
     
+    await query.answer()
     await query.message.reply_text(f"Cashed out for {amount} credits!")
     await context.bot.send_message(
         chat_id=query.message.chat_id,
