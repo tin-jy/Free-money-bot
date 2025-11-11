@@ -276,3 +276,52 @@ def get_dropball_net_profit():
         return result[0]["total_profit"]
     else:
         return 0
+    
+def get_dropball_stats(user_id: int):
+    pipeline = [
+        {"$match": {"user_id": user_id}},
+        {
+            "$group": {
+                "_id": None,
+                "total_spent": {
+                    "$sum": {"$multiply": ["$multiplier", "$num_of_balls"]}
+                },
+                "total_cashout": {"$sum": "$cashout_amount"},
+                "count_total": {"$sum": 1},
+                "count_cashout": {
+                    "$sum": {
+                        "$cond": [{"$gt": ["$cashout_amount", 0]}, 1, 0]
+                    }
+                },
+            }
+        }
+    ]
+
+    result = list(drop_ball_collection.aggregate(pipeline))
+
+    if not result:
+        return {
+            "lifetime_spent": 0,
+            "lifetime_cashout": 0,
+            "lifetime_net": 0,
+            "cashout_percentage": 0.0,
+        }
+
+    data = result[0]
+
+    lifetime_spent = data["total_spent"]
+    lifetime_cashout = data["total_cashout"]
+    
+    lifetime_net = lifetime_cashout - lifetime_spent
+
+    if data["count_total"] > 0:
+        cashout_percentage = data["count_cashout"] / data["count_total"]
+    else:
+        cashout_percentage = 0.0
+
+    return {
+        "lifetime_spent": lifetime_spent,
+        "lifetime_cashout": lifetime_cashout,
+        "lifetime_net": lifetime_net,
+        "cashout_percentage": cashout_percentage,
+    }

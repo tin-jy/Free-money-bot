@@ -3,7 +3,7 @@ import math
 from constants import COGRATULATIONS_STICKERS
 from typing import List, Tuple
 from datetime import datetime, timedelta, timezone
-from database import increment_user_balance, decerement_user_balance, get_user_balance, insert_drop_ball_game, get_dropball_net_profit
+from database import increment_user_balance, decerement_user_balance, get_user_balance, insert_drop_ball_game, get_dropball_net_profit, get_dropball_stats
 from telegram import Update
 from telegram.ext import ContextTypes
 
@@ -313,6 +313,7 @@ NOTICE: This game costs credits to play
 /drop twice to drop a ball
 /cashout to cashout
 /helpaim for aim guidance
+/lucky9stats for statistics
 
 Payouts:
 3 in a row | 6
@@ -330,6 +331,17 @@ Details: Each dropped ball costs 1 credit. Time the interval between /drop comma
 async def db_stats(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     profit = get_dropball_net_profit()
     await update.message.reply_text(f"Net profit: {profit}")
+
+async def lucky9_stats(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    stats = get_dropball_stats
+    message = f"""
+Balls dropped: {stats.get("lifetime_spent")}
+Lifetime cashout: {stats.get("lifetime_cashout")}
+Lifetime net: {stats.get("lifetime_net")}
+Cashout percentage: {stats.get("cashout_percentage")}
+"""
+    await update.message.reply_text(message)
+
 
 def format_game_state(game_state, latest_bin, game_over: bool):
     formatted_string = ""

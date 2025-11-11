@@ -2,7 +2,7 @@ from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, fil
 from telegram.error import Conflict
 from dotenv import load_dotenv
 from commands import *
-from drop_ball_game import start_drop_ball, drop_ball, cash_out, help_aim, db_rules, db_stats
+from drop_ball_game import start_drop_ball, drop_ball, cash_out, help_aim, db_rules, db_stats, lucky9_stats
 import os
 import time
 import logging
@@ -42,7 +42,8 @@ def build_application():
     app.add_handler(CommandHandler("cashout", cash_out))
     app.add_handler(CommandHandler("helpaim", help_aim))
     app.add_handler(CommandHandler("lucky9help", db_rules))
-    app.add_handler(CommandHandler("lucky9stats", db_stats))
+    app.add_handler(CommandHandler("lucky9profit", db_stats))
+    app.add_handler(CommandHandler("lucky9stats", lucky9_stats))
 
     # Hidden commands
     app.add_handler(CommandHandler("bad", bad))
