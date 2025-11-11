@@ -333,7 +333,8 @@ async def db_stats(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(f"Net profit: {profit}")
 
 async def lucky9_stats(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    stats = get_dropball_stats
+    user_id = update.effective_user.id
+    stats = get_dropball_stats(user_id)
     message = f"""
 Balls dropped: {stats.get("lifetime_spent")}
 Lifetime cashout: {stats.get("lifetime_cashout")}
