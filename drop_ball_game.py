@@ -4,10 +4,20 @@ from constants import COGRATULATIONS_STICKERS
 from typing import List, Tuple
 from datetime import datetime, timedelta, timezone
 from database import increment_user_balance, decerement_user_balance, get_user_balance, insert_drop_ball_game, get_dropball_net_profit, get_dropball_stats
-from telegram import Update
-from telegram.ext import ContextTypes
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import ContextTypes, CallbackQueryHandler, CommandHandler, ConversationHandler
 
 games = []
+
+GAME_KEYBOARD = InlineKeyboardMarkup([
+    [
+        InlineKeyboardButton("DROP 🎯", callback_data="drop_ball"),
+        InlineKeyboardButton("CASH OUT 💰", callback_data="cash_out")
+    ]
+])
+
+START = 0
+STOP = 1
 
 NOT_ENOUGH_TO_START = -1
 NOT_ENOUGH_TO_DROP = -2
@@ -227,79 +237,122 @@ def sample_bin_at_time(
             return i, probs
     return len(probs) - 1, probs
 
-async def start_drop_ball(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def start_drop_ball(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     user_name = update.effective_user.name
+
     result = create_game(user_id, user_name)
+
     if result == UNPROFITABLE:
-        update.message.reply_text("Game is suspended due to unexpected losses")
-    if result == GAME_ALREADY_EXISTS:
-        await update.message.reply_text("Game already exists. Use /drop to drop a ball")
+        await update.message.reply_text("Game is suspended due to unexpected losses")
         return
-    await update.message.reply_text("Game started! Use /drop to drop a ball.")
-    
+
+    if result == GAME_ALREADY_EXISTS:
+        await update.message.reply_text("Game already exists.")
+        return
+
+    await update.message.reply_text(
+        "Game started! Use the buttons to play.",
+        reply_markup=GAME_KEYBOARD
+    )
+
 
 async def drop_ball(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    user_id = update.effective_user.id
+    query = update.callback_query
+    await query.answer()
+
+    user_id = query.from_user.id
+    
+    game = next((g for g in games if g["user_id"] == user_id), None)
+    if game is None:
+        await query.answer("This is not your game!", show_alert=True)
+        return
+
     status, data = execute_drop_ball(user_id)
+    
     if status == NO_EXISTING_BALL_DROP_GAME:
-        await update.message.reply_text("Use /startlucky9 to start a game first")
+        await query.answer("No active game. Use /startlucky9 to start your own.", show_alert=True)
         return
     if status == NOT_ENOUGH_TO_DROP:
-        await update.message.reply_text("You don't have enough credits")
+        await query.answer("You don't have enough credits!", show_alert=True)
         return
     if status == FIRST_DROP_SUCCESS:
-        # await update.message.reply_text("Use /drop again to time your drop")
+        # await query.edit_message_reply_markup(
+        #     reply_markup=GAME_KEYBOARD
+        # )
         return
+    
+    assert data
+    game_state = data["game_state"]
+    bin = data["bin"]
+    timediff = data["timediff"]
+    pos = data["pos"]
+
     if status == GAME_OVER:
-        assert data
-        game_state = data.get("game_state")
-        bin = data.get("bin")
-        timediff = data.get("timediff")
-        pos = data.get("pos")
-        formatted_game_data = format_game_state(game_state, bin, True)
-        message = f"<pre>GAME OVER\n\nTime: {round(timediff.total_seconds(), 3)}s\nAim: {round(pos + 5, 3)}\nHit: {bin + 1}\n\n{formatted_game_data}</pre>"
-        await update.message.reply_text(message, parse_mode="HTML")
-        await update.message.reply_text("/startlucky9 to play again")
+        formatted = format_game_state(game_state, bin, True)
+        msg = (
+            f"<pre>GAME OVER\n\nTime: {round(timediff.total_seconds(), 3)}s\n"
+            f"Aim: {round(pos + 5, 3)}\n"
+            f"Hit: {bin + 1}\n\n{formatted}</pre>"
+        )
+
+        await query.edit_message_text(msg, parse_mode="HTML")
+        await context.bot.send_message(
+            chat_id=query.message.chat_id,
+            text="/startlucky9 to play again"
+        )
         return
     if status == SECOND_DROP_SUCCESS:
-        assert data
-        game_state = data.get("game_state")
-        bin = data.get("bin")
-        timediff = data.get("timediff")
-        pos = data.get("pos")
-        formatted_game_data = format_game_state(game_state, bin, False)
-        message = f"<pre>Time: {round(timediff.total_seconds(), 3)}s\nAim: {round(pos + 5, 3)}\nHit: {bin + 1}\n\n{formatted_game_data}</pre>"
-        await update.message.reply_text(message, parse_mode="HTML")
+        formatted = format_game_state(game_state, bin, False)
+        msg = (
+            f"<pre>Time: {round(timediff.total_seconds(), 3)}s\n"
+            f"Aim: {round(pos + 5, 3)}\n"
+            f"Hit: {bin + 1}\n\n{formatted}</pre>"
+        )
+
+        await query.edit_message_text(msg, parse_mode="HTML", reply_markup=GAME_KEYBOARD)
         return
     if status == JACKPOT:
-        assert data
-        game_state = data.get("game_state")
-        bin = data.get("bin")
-        timediff = data.get("timediff")
-        pos = data.get("pos")
-        formatted_game_data = format_game_state(game_state, bin, False)
-        message = f"<pre>JACKPOT!!!\n\nTime: {round(timediff.total_seconds(), 3)}s\nAim: {round(pos + 5, 3)}\nHit: {bin + 1}\n\n{formatted_game_data}</pre>"
-        await update.message.reply_text(message, parse_mode="HTML")
-        await context.bot.send_sticker(
-            chat_id=update.effective_chat.id,
-            sticker=random.choice(COGRATULATIONS_STICKERS),
-            reply_to_message_id=update.message.id
+        formatted = format_game_state(game_state, bin, False)
+        msg = (
+            f"<pre>JACKPOT!!!\n\nTime: {round(timediff.total_seconds(), 3)}s\n"
+            f"Aim: {round(pos + 5, 3)}\n"
+            f"Hit: {bin + 1}\n\n{formatted}</pre>"
         )
-        await update.message.reply_text(f"CASHED OUT FOR {JACKPOT_PRIZE}!!!")
+        await query.message.reply_text(msg, parse_mode="HTML")
+        await context.bot.send_sticker(
+            chat_id=query.message.chat_id,
+            sticker=random.choice(COGRATULATIONS_STICKERS),
+            reply_to_message_id=query.message.message_id
+        )
+        await query.message.reply_text(f"CASHED OUT FOR {JACKPOT_PRIZE}!!!")
         return
     
 async def cash_out(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    user_id = update.effective_user.id
+    query = update.callback_query
+    await query.answer()
+
+    user_id = query.from_user.id
+
+    game = next((g for g in games if g["user_id"] == user_id), None)
+    if game is None:
+        await query.answer("This is not your game!", show_alert=True)
+        return
+
     status, amount = execute_cash_out(user_id)
+
     if status == NO_EXISTING_BALL_DROP_GAME:
-        await update.message.reply_text("No game in progress")
+        await query.answer("No active game!", show_alert=True)
         return
     if status == CANNOT_CASH_OUT:
-        await update.message.reply_text("You need a chain of at least 3 to cash out")
+        await query.message.reply_text("You need a chain of at least 3 to cash out")
         return
     
-    await update.message.reply_text(f"Cashed out for {amount} credits!")
+    await query.message.reply_text(f"Cashed out for {amount} credits!")
+    await context.bot.send_message(
+        chat_id=query.message.chat_id,
+        text="/startlucky9 to play again"
+    )
 
 async def help_aim(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     with open("dropball chance distribution.png", "rb") as f:
@@ -310,8 +363,6 @@ async def db_rules(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 NOTICE: This game costs credits to play
 
 /startlucky9 to start
-/drop twice to drop a ball
-/cashout to cashout
 /helpaim for aim guidance
 /lucky9stats for statistics
 
@@ -324,7 +375,7 @@ Payouts:
 8 in a row | 400
 9 in a row | 1200
 
-Details: Each dropped ball costs 1 credit. Time the interval between /drop commands to aim. After 1 second, the ball starts in the middle and swings left. Releasing before 1s or after 17s will cause the ball to randomly fire. The ball completes 1 oscillation every 8 seconds.
+Details: Each dropped ball costs 1 credit. Time the interval between button presses to aim. After 1 second, the ball starts in the middle and swings left. Releasing before 1s or after 17s will cause the ball to randomly fire. The ball completes 1 oscillation every 8 seconds.
     """
     await update.message.reply_text(message)
 
@@ -342,7 +393,6 @@ Lifetime net: {stats.get("lifetime_net")}
 Cashout percentage: {round(stats.get("cashout_percentage") * 100, 2)}%
 """
     await update.message.reply_text(message)
-
 
 def format_game_state(game_state, latest_bin, game_over: bool):
     formatted_string = ""

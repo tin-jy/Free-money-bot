@@ -1,4 +1,4 @@
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters
+from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, CallbackQueryHandler
 from telegram.error import Conflict
 from dotenv import load_dotenv
 from commands import *
@@ -38,12 +38,15 @@ def build_application():
 
     # Lucky9 game
     app.add_handler(CommandHandler("startlucky9", start_drop_ball))
-    app.add_handler(CommandHandler("drop", drop_ball))
-    app.add_handler(CommandHandler("cashout", cash_out))
+    # app.add_handler(CommandHandler("drop", drop_ball))
+    # app.add_handler(CommandHandler("cashout", cash_out))
     app.add_handler(CommandHandler("helpaim", help_aim))
     app.add_handler(CommandHandler("lucky9help", db_rules))
     app.add_handler(CommandHandler("lucky9profit", db_stats))
     app.add_handler(CommandHandler("lucky9stats", lucky9_stats))
+    app.add_handler(CallbackQueryHandler(drop_ball, pattern="^drop_ball$"))
+    app.add_handler(CallbackQueryHandler(cash_out, pattern="^cash_out$"))
+
 
     # Hidden commands
     app.add_handler(CommandHandler("bad", bad))
