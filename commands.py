@@ -27,6 +27,10 @@ recent_stickers = {
 }
 
 async def hello(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if update.effective_user.id:
+        print(f"User id: {update.effective_user.id}")
+    if update.effective_chat.id:
+        print(f"Chat id: {update.effective_chat.id}")
     await update.message.reply_text(f'Hello {update.effective_user.first_name}')
 
 async def help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -392,7 +396,7 @@ async def set_user_balance(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         user_name = args[0]
         amount = int(args[1])
         logic.set_user_balance(user_name, amount)
-        await update.message.reply_text(f"User {user.name}'s balance set to {amount}")
+        await update.message.reply_text(f"User {user_name}'s balance set to {amount}")
     except Exception:
         await update.message.reply_text("Invalid format")
 

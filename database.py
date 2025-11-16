@@ -72,7 +72,7 @@ def decrement_remaining_attempts(user_id: int):
     )
     return result
 
-def decerement_user_balance(user_id: int, amount):
+def decrement_user_balance(user_id: int, amount):
     result = users_collection.update_one(
         {"user_id": user_id},
         {"$inc": {"balance": amount * -1}}

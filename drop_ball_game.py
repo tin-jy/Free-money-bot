@@ -3,7 +3,7 @@ import math
 from constants import COGRATULATIONS_STICKERS
 from typing import List, Tuple
 from datetime import datetime, timedelta, timezone
-from database import increment_user_balance, decerement_user_balance, get_user_balance, insert_drop_ball_game, get_dropball_net_profit, get_dropball_stats
+from database import increment_user_balance, decrement_user_balance, get_user_balance, insert_drop_ball_game, get_dropball_net_profit, get_dropball_stats
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes, CallbackQueryHandler, CommandHandler, ConversationHandler
 
@@ -68,7 +68,7 @@ def execute_drop_ball(user_id: int):
     if not first_drop:
         if get_user_balance(user_id) < multipler:
             return NOT_ENOUGH_TO_DROP, None
-        decerement_user_balance(user_id, amount=multipler)
+        decrement_user_balance(user_id, amount=multipler)
         current_game["first_drop"] = timestamp
         return FIRST_DROP_SUCCESS, None
     
@@ -154,7 +154,6 @@ def convert_streak_to_amount(streak: int) -> int:
     
     return 0
     
-
 def convert_time_diff_to_drop_position(timediff: timedelta) -> Tuple[int, float]:
     t = float(timediff.total_seconds())
     MIN_TIME = 1
@@ -259,7 +258,7 @@ async def start_drop_ball(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def drop_ball(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
-    await query.answer()
+    # await query.answer()
 
     user_id = query.from_user.id
     
