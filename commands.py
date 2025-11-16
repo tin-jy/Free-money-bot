@@ -28,10 +28,14 @@ recent_stickers = {
 
 async def hello(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if update.effective_user.id:
-        print(f"User id: {update.effective_user.id}")
+        user_id = update.effective_user.id
+    else:
+        user_id = "NA"
     if update.effective_chat.id:
-        print(f"Chat id: {update.effective_chat.id}")
-    await update.message.reply_text(f'Hello {update.effective_user.first_name}')
+        chat_id = update.effective_chat.id
+    else:
+        chat_id = "NA"
+    await update.message.reply_text(f'Hello {update.effective_user.first_name}\nUser_id: {user_id}\nChat_id: {chat_id}')
 
 async def help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     response = f"Use /geiwoqian to get credits! Users get 3 attempts weekly that reset every Saturday at 8pm SGT. Bot top-ups are randomized."
