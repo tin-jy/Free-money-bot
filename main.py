@@ -26,7 +26,7 @@ def build_application():
 
     whitelist_filter = filters.User(user_id=WHITELISTED_USER_IDS)
     admin_filter = filters.User(user_id=ADMIN_IDS)
-    chat_filter = filters.ChatType(filters.ChatType.PRIVATE)
+    chat_filter = filters.ChatType.PRIVATE
 
     # Regular commands
     app.add_handler(CommandHandler("hello", hello))
