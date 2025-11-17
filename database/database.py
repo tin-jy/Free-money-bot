@@ -1,9 +1,10 @@
 from dotenv import load_dotenv
 from pymongo import MongoClient
 from datetime import datetime, timedelta, timezone
+from pymongo import ASCENDING, DESCENDING
 import os
 import random
-from constants import *
+from constants.constants import *
 
 load_dotenv()
 
@@ -15,6 +16,7 @@ bank_collection = db["bank"]
 users_collection = db["users"]
 logs_collection = db["logs"]
 drop_ball_collection = db["dropball"]
+button_game_collection = db["button_game"]
 
 def get_bank_balance() -> int:
     record = bank_collection.find_one()

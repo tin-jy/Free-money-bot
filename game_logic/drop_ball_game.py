@@ -1,9 +1,9 @@
 import random
 import math
-from constants import COGRATULATIONS_STICKERS
+from constants.constants import COGRATULATIONS_STICKERS
 from typing import List, Tuple
 from datetime import datetime, timedelta, timezone
-from database import increment_user_balance, decrement_user_balance, get_user_balance, insert_drop_ball_game, get_dropball_net_profit, get_dropball_stats
+from database.database import increment_user_balance, decrement_user_balance, get_user_balance, insert_drop_ball_game, get_dropball_net_profit, get_dropball_stats
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes, CallbackQueryHandler, CommandHandler, ConversationHandler
 

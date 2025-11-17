@@ -1,13 +1,14 @@
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, CallbackQueryHandler
 from telegram.error import Conflict
 from dotenv import load_dotenv
-from commands import *
-from drop_ball_game import start_drop_ball, drop_ball, cash_out, help_aim, db_rules, db_stats, lucky9_stats
+from game_logic.commands import *
+from game_logic.drop_ball_game import *
+from game_logic.button import *
 import os
 import time
 import logging
 import asyncio
-from constants import *
+from constants.constants import *
 
 load_dotenv()
 TOKEN = os.getenv("BOT_TOKEN")
@@ -48,6 +49,10 @@ def build_application():
     app.add_handler(CallbackQueryHandler(drop_ball, pattern="^drop_ball$"))
     app.add_handler(CallbackQueryHandler(cash_out, pattern="^cash_out$"))
 
+    # Button press game
+    app.add_handler(CommandHandler("button", summon_button))
+    app.add_handler(CommandHandler("buttonleaderboard", get_highscores))
+    app.add_handler(CallbackQueryHandler(hit_button, pattern="^hit_button$"))
 
     # Hidden commands
     app.add_handler(CommandHandler("bad", bad))
@@ -90,6 +95,7 @@ def run_bot():
             logger.error(f"Bot crashed with error: {e}", exc_info=True)
             logger.info("Restarting bot in 5 seconds...")
             time.sleep(5)
+
 
 if __name__ == "__main__":
     asyncio.run(run_bot())

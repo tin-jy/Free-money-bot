@@ -1,11 +1,10 @@
 from telegram import Update
 from telegram.ext import ContextTypes
-from telegram.helpers import escape_markdown
 from datetime import datetime, timedelta, timezone
 from collections import deque
-import logic
+import game_logic.logic as logic
 import html
-from constants import *
+from constants.constants import *
 import random
 import asyncio
 from collections import defaultdict

@@ -1,5 +1,5 @@
-import database
-from constants import *
+import database.database as database
+from constants.constants import *
 
 def get_remaining_attempts(user_id):
     return database.get_remaining_attempts(user_id)
