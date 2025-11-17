@@ -344,7 +344,7 @@ async def generate_leaderboard(update: Update, context: ContextTypes.DEFAULT_TYP
     response = "\n".join(lines)
     await update.message.reply_text(response, parse_mode="HTML")
 
-async def get_withdrawl_history(update: Update, context:ContextTypes.DEFAULT_TYPE) -> None:
+async def get_withdrawal_history(update: Update, context:ContextTypes.DEFAULT_TYPE) -> None:
     withdrawal_list = logic.get_withdrawal_history()
     if not withdrawal_list:
         await update.message.reply_text("No history found")

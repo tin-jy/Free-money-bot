@@ -20,28 +20,28 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 WHITELISTED_USER_IDS = {NUT, KAI, COLE, LAS, HONG, ELLE, YS}
+WHITELISTED_CHAT_IDS = {CCOS}
 ADMIN_IDS = {NUT}
 
 def build_application():
     app = ApplicationBuilder().token(TOKEN).build()
 
-    whitelist_filter = filters.User(user_id=WHITELISTED_USER_IDS)
+    user_filter = filters.User(user_id=WHITELISTED_USER_IDS)
     admin_filter = filters.User(user_id=ADMIN_IDS)
-    chat_filter = filters.ChatType.PRIVATE
+    chat_type_filter = filters.ChatType.PRIVATE
+    chat_filter = filters.Chat(chat_id=WHITELISTED_CHAT_IDS)
 
     # Regular commands
-    app.add_handler(CommandHandler("hello", hello))
+    app.add_handler(CommandHandler("hello", hello, filters=admin_filter))
     app.add_handler(CommandHandler("help", help))
-    app.add_handler(CommandHandler("geiwoqian", take, filters=whitelist_filter))
-    app.add_handler(CommandHandler("balance", get_user_balance, filters=whitelist_filter))
+    app.add_handler(CommandHandler("geiwoqian", take, filters=user_filter))
+    app.add_handler(CommandHandler("balance", get_user_balance, filters=user_filter))
     app.add_handler(CommandHandler("leaderboard", generate_leaderboard))
-    app.add_handler(CommandHandler("history", get_user_history, filters=whitelist_filter))
-    app.add_handler(CommandHandler("recent", get_withdrawl_history))
+    app.add_handler(CommandHandler("history", get_user_history, filters=user_filter))
+    app.add_handler(CommandHandler("recent", get_withdrawal_history))
 
     # Lucky9 game
-    app.add_handler(CommandHandler("startlucky9", start_drop_ball))
-    # app.add_handler(CommandHandler("drop", drop_ball))
-    # app.add_handler(CommandHandler("cashout", cash_out))
+    app.add_handler(CommandHandler("startlucky9", start_drop_ball, filters=user_filter & chat_type_filter))
     app.add_handler(CommandHandler("helpaim", help_aim))
     app.add_handler(CommandHandler("lucky9help", db_rules))
     app.add_handler(CommandHandler("lucky9profit", db_stats))

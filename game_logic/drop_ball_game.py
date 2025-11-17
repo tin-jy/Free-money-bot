@@ -5,7 +5,7 @@ from typing import List, Tuple
 from datetime import datetime, timedelta, timezone
 from database.database import increment_user_balance, decrement_user_balance, get_user_balance, insert_drop_ball_game, get_dropball_net_profit, get_dropball_stats
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import ContextTypes, CallbackQueryHandler, CommandHandler, ConversationHandler
+from telegram.ext import ContextTypes
 
 games = []
 
@@ -436,13 +436,3 @@ def execute_help_aim(target_bin: float):
 
     output.sort()
     return output
-
-
-# For testing
-# t = 3
-# idx, probs = sample_bin_at_time(t - 1, sigma=1.2, kernel="laplace")
-# pointer_pos = round(pointer_position(t - 1), 2)
-# print("t=", t, "pointer approx=", round(pointer_position(t - 1),2))
-# print("probs:", ["{:.4f}".format(p) for p in probs])
-# print("sampled bin:", idx)
-# print()
