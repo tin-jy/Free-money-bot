@@ -28,7 +28,7 @@ def build_application():
 
     user_filter = filters.User(user_id=WHITELISTED_USER_IDS)
     admin_filter = filters.User(user_id=ADMIN_IDS)
-    chat_type_filter = filters.ChatType.PRIVATE
+    dm_filter = filters.ChatType.PRIVATE
     chat_filter = filters.Chat(chat_id=WHITELISTED_CHAT_IDS)
 
     # Regular commands
@@ -41,13 +41,20 @@ def build_application():
     app.add_handler(CommandHandler("recent", get_withdrawal_history))
 
     # Lucky9 game
-    app.add_handler(CommandHandler("startlucky9", start_drop_ball, filters=user_filter & chat_type_filter))
-    app.add_handler(CommandHandler("helpaim", help_aim))
-    app.add_handler(CommandHandler("lucky9help", db_rules))
-    app.add_handler(CommandHandler("lucky9profit", db_stats))
-    app.add_handler(CommandHandler("lucky9stats", lucky9_stats))
-    app.add_handler(CallbackQueryHandler(drop_ball, pattern="^drop_ball$"))
-    app.add_handler(CallbackQueryHandler(cash_out, pattern="^cash_out$"))
+    # app.add_handler(CommandHandler("startlucky9", start_drop_ball, filters=user_filter & dm_filter))
+    # app.add_handler(CommandHandler("helpaim", help_aim))
+    # app.add_handler(CommandHandler("lucky9help", db_rules))
+    # app.add_handler(CommandHandler("lucky9profit", db_stats))
+    # app.add_handler(CommandHandler("lucky9stats", lucky9_stats))
+    # app.add_handler(CallbackQueryHandler(drop_ball, pattern="^drop_ball$", filters=user_filter & dm_filter))
+    # app.add_handler(CallbackQueryHandler(cash_out, pattern="^cash_out$", filters=user_filter & dm_filter))
+
+    # app.add_handler(CallbackQueryHandler(start_game, pattern="^start_drop$"))
+    # app.add_handler(CallbackQueryHandler(stop_game, pattern="^stop_drop$"))
+    # app.add_handler(CallbackQueryHandler(random_action, pattern="^random_drop$"))
+    # app.add_handler(CallbackQueryHandler(retry_game, pattern="^retry$"))
+    # app.add_handler(CallbackQueryHandler(cash_out, pattern="^cash_out$"))
+    # app.add_handler(CallbackQueryHandler(again_game, pattern="^play_again$"))
 
     # Button press game
     app.add_handler(CommandHandler("button", summon_button))
@@ -68,6 +75,7 @@ def build_application():
     app.add_handler(CommandHandler("addattempt", add_attempt, filters=admin_filter))
     app.add_handler(CommandHandler("setbalance", set_user_balance, filters=admin_filter))
     app.add_handler(CommandHandler("bank", get_bank_balance, filters=admin_filter))
+    app.add_handler(CommandHandler("announcement", announcement, filters=admin_filter))
 
     async def error_handler(update, context):
         err = context.error

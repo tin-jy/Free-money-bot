@@ -7,12 +7,18 @@ from database.database import increment_user_balance, decrement_user_balance, ge
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 
-games = []
-
 GAME_KEYBOARD = InlineKeyboardMarkup([
     [
-        InlineKeyboardButton("DROP 🎯", callback_data="drop_ball"),
-        InlineKeyboardButton("CASH OUT 💰", callback_data="cash_out")
+        InlineKeyboardButton("START", callback_data="start_drop"),
+        InlineKeyboardButton("STOP", callback_data="stop_drop")
+    ],
+    [
+        InlineKeyboardButton("RANDOM", callback_data="random_drop"),
+        InlineKeyboardButton("RETRY", callback_data="retry")
+    ],
+    [
+        InlineKeyboardButton("CASH OUT 💰", callback_data="cash_out"),
+        InlineKeyboardButton("AGAIN", callback_data="play_again")
     ]
 ])
 
@@ -34,6 +40,24 @@ JACKPOT = 6
 
 JACKPOT_PRIZE = 1200
 
+async def start_drop(update: Update, context = ContextTypes.DEFAULT_TYPE):
+    pass
+
+async def stop_drop(update: Update, context = ContextTypes.DEFAULT_TYPE):
+    pass
+
+async def random_drop(update: Update, context = ContextTypes.DEFAULT_TYPE):
+    pass
+
+async def retry(update: Update, context = ContextTypes.DEFAULT_TYPE):
+    pass
+
+async def cash_out(update: Update, context = ContextTypes.DEFAULT_TYPE):
+    pass
+
+async def play_again(update: Update, context = ContextTypes.DEFAULT_TYPE):
+    pass
+
 def create_game(user_id: int, user_name: str, multipler=1):
     net_profit = get_dropball_net_profit()
     if net_profit < -1000:
@@ -51,6 +75,7 @@ def create_game(user_id: int, user_name: str, multipler=1):
     }
     games.append(new_game)
     return GAME_STARTED
+
 
 def execute_drop_ball(user_id: int):
     global games
@@ -254,7 +279,6 @@ async def start_drop_ball(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "Game started! Use the buttons to play.",
         reply_markup=GAME_KEYBOARD
     )
-
 
 async def drop_ball(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query

@@ -25,6 +25,18 @@ recent_stickers = {
     "angry_stickers": sample.copy()
 }
 
+async def announcement(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    message = " ".join(context.args)
+
+    if not message:
+        await update.message.reply_text(
+            "Please provide a message.\n\nUsage:\n/announcement <your message>"
+        )
+        return
+
+    await context.bot.send_message(chat_id=CCOS, text=message)
+    await update.message.reply_text("Announcement sent!")
+
 async def hello(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if update.effective_user.id:
         user_id = update.effective_user.id
