@@ -110,7 +110,7 @@ def execute_cashout(game: dict) -> int:
     
     return cashout_amount
 
-async def start_or_find_game(update: Update, context = ContextTypes.DEFAULT_TYPE):
+async def start_or_find_game(update: Update, context = ContextTypes.DEFAULT_TYPE) -> None:
     user_id = update.effective_user.id
     user_name = update.effective_user.name
     game = get_or_create_game(user_id, user_name)
@@ -123,7 +123,7 @@ async def start_or_find_game(update: Update, context = ContextTypes.DEFAULT_TYPE
         parse_mode="HTML"
     )
 
-async def start_drop(update: Update, context = ContextTypes.DEFAULT_TYPE):
+async def start_drop(update: Update, context = ContextTypes.DEFAULT_TYPE) -> None:
     now = datetime.now(timezone.utc)
 
     query = update.callback_query
@@ -135,7 +135,7 @@ async def start_drop(update: Update, context = ContextTypes.DEFAULT_TYPE):
 
     await query.answer("Started!", show_alert=False)
 
-async def stop_drop(update: Update, context = ContextTypes.DEFAULT_TYPE):
+async def stop_drop(update: Update, context = ContextTypes.DEFAULT_TYPE) -> None:
     now = datetime.now(timezone.utc)
 
     query = update.callback_query
@@ -160,7 +160,7 @@ async def stop_drop(update: Update, context = ContextTypes.DEFAULT_TYPE):
         parse_mode="HTML"
     )
 
-async def random_drop(update: Update, context = ContextTypes.DEFAULT_TYPE):
+async def random_drop(update: Update, context = ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
     user_id = update.effective_user.id
     user_name = update.effective_user.name
@@ -178,7 +178,7 @@ async def random_drop(update: Update, context = ContextTypes.DEFAULT_TYPE):
         parse_mode="HTML"
     )
 
-async def retry(update: Update, context = ContextTypes.DEFAULT_TYPE):
+async def retry(update: Update, context = ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
     user_id = update.effective_user.id
     user_name = update.effective_user.name
@@ -188,7 +188,7 @@ async def retry(update: Update, context = ContextTypes.DEFAULT_TYPE):
     database.update_game(game)
     await query.answer("Reset successfully!", show_alert=False)
 
-async def cash_out(update: Update, context = ContextTypes.DEFAULT_TYPE):
+async def cash_out(update: Update, context = ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
     user_id = update.effective_user.id
     user_name = update.effective_user.name
@@ -205,7 +205,7 @@ async def cash_out(update: Update, context = ContextTypes.DEFAULT_TYPE):
     else:
         await query.answer("Cannot cash out!", show_alert=False)
 
-async def play_again(update: Update, context = ContextTypes.DEFAULT_TYPE):
+async def play_again(update: Update, context = ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
     user_id = update.effective_user.id
     user_name = update.effective_user.name
@@ -383,7 +383,7 @@ def format_game_state(game_state: List) -> str:
     
     return f"{line1}\n{line2}\n{line3}"
     
-def execute_help_aim(target_bin: float):
+def execute_help_aim(target_bin: float) -> List:
     if target_bin < 1 or target_bin > 9:
         return None
     target_bin -= 5

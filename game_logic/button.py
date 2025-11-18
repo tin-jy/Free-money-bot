@@ -10,7 +10,7 @@ keyboard = [
     [InlineKeyboardButton("Hit!", callback_data="hit_button")]
 ]
 
-async def hit_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def hit_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """User pressed inline button."""
     query = update.callback_query
     user = query.from_user
@@ -36,7 +36,7 @@ async def hit_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     await update.callback_query.answer()
 
-async def summon_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def summon_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """User typed /button (start or continue game)."""
     user = update.effective_user
     user_id = user.id
@@ -51,7 +51,7 @@ async def summon_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
         text, reply_markup=InlineKeyboardMarkup(keyboard)
     )
     
-def get_or_create_game(user_id: int, user_name: str):
+def get_or_create_game(user_id: int, user_name: str) -> dict:
     game = database.get_button_game(user_id)
     if game is None:
         game = {
@@ -67,7 +67,7 @@ def get_or_create_game(user_id: int, user_name: str):
 def is_add_score_success(score) -> bool:
     return random.randint(1, 100) >= score
 
-async def get_highscores(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def get_highscores(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     all_time, weekly = database.get_button_highscores()
     
     lines = ["🏆 <b>Leaderboard</b> 🏆", "", "<b>All-time highscores</b>"]
@@ -90,7 +90,7 @@ async def get_highscores(update: Update, context: ContextTypes.DEFAULT_TYPE):
     message = "\n".join(lines)
     await update.message.reply_text(message, parse_mode="HTML")
 
-async def weekly_reset_loop():
+async def weekly_reset_loop() -> None:
     while True:
         now = datetime.now(timezone.utc)
 
