@@ -50,7 +50,7 @@ def build_application():
     # app.add_handler(CallbackQueryHandler(drop_ball, pattern="^drop_ball$", filters=user_filter & dm_filter))
     # app.add_handler(CallbackQueryHandler(cash_out, pattern="^cash_out$", filters=user_filter & dm_filter))
 
-    app.add_handler(CommandHandler("lucky9", start_game))
+    app.add_handler(CommandHandler("lucky9", start_or_find_game))
     app.add_handler(CallbackQueryHandler(start_drop, pattern="^start_drop$"))
     app.add_handler(CallbackQueryHandler(stop_drop, pattern="^stop_drop$"))
     app.add_handler(CallbackQueryHandler(random_drop, pattern="^random_drop$"))

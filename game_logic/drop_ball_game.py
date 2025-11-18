@@ -63,7 +63,10 @@ def simulate_drop(game: dict, now: datetime=None) -> str:
     if now is None:
         timediff = timedelta(seconds=0)
     else:
-        timediff = now - game.get("first_drop")
+        first_drop: datetime = game.get("first_drop")
+        if first_drop.tzinfo is None:
+            first_drop = first_drop.replace(tzinfo=timezone.utc)
+        timediff = now - first_drop
     bin, pos = convert_time_diff_to_drop_position(timediff)
     game["first_drop"] = None
 
@@ -99,7 +102,7 @@ def execute_cashout(game: dict) -> int:
     
     return cashout_amount
 
-async def start_game(update: Update, context = ContextTypes.DEFAULT_TYPE):
+async def start_or_find_game(update: Update, context = ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     user_name = update.effective_user.name
     game = get_or_create_game(user_id, user_name)
@@ -107,8 +110,9 @@ async def start_game(update: Update, context = ContextTypes.DEFAULT_TYPE):
     formatted_game_state = format_game_state(game.get("gamestate"))
     
     await update.message.reply_text(
-        text=formatted_game_state,
-        reply_markup=GAME_KEYBOARD
+        text=f"<pre>{formatted_game_state}</pre>",
+        reply_markup=GAME_KEYBOARD,
+        parse_mode="HTML"
     )
 
 async def start_drop(update: Update, context = ContextTypes.DEFAULT_TYPE):
@@ -143,8 +147,9 @@ async def stop_drop(update: Update, context = ContextTypes.DEFAULT_TYPE):
         return
     
     await query.edit_message_text(
-        text=new_text,
-        reply_markup=GAME_KEYBOARD
+        text=f"<pre>{new_text}</pre>",
+        reply_markup=GAME_KEYBOARD,
+        parse_mode="HTML"
     )
 
 async def random_drop(update: Update, context = ContextTypes.DEFAULT_TYPE):
@@ -160,8 +165,9 @@ async def random_drop(update: Update, context = ContextTypes.DEFAULT_TYPE):
         return
 
     await query.edit_message_text(
-        text=new_text,
-        reply_markup=GAME_KEYBOARD
+        text=f"<pre>{new_text}</pre>",
+        reply_markup=GAME_KEYBOARD,
+        parse_mode="HTML"
     )
 
 async def retry(update: Update, context = ContextTypes.DEFAULT_TYPE):
@@ -184,8 +190,9 @@ async def cash_out(update: Update, context = ContextTypes.DEFAULT_TYPE):
     if cashout_amount:
         new_text = f"Cashed out for {cashout_amount} credits!"
         await query.edit_message_text(
-            text=new_text,
-            reply_markup=GAME_KEYBOARD
+            text=f"<pre>{new_text}</pre>",
+            reply_markup=GAME_KEYBOARD,
+            parse_mode="HTML"
         )
     else:
         await query.answer("Cannot cash out!", show_alert=False)
@@ -202,8 +209,9 @@ async def play_again(update: Update, context = ContextTypes.DEFAULT_TYPE):
     game = get_or_create_game(user_id, user_name)
     formatted_game_state = format_game_state(game.get("gamestate"))
     await query.edit_message_text(
-        text=formatted_game_state,
-        reply_markup=GAME_KEYBOARD
+        text=f"<pre>{formatted_game_state}</pre>",
+        reply_markup=GAME_KEYBOARD,
+        parse_mode="HTML"
     )
 
 def convert_streak_to_amount(streak: int) -> int:
