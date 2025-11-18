@@ -2,7 +2,7 @@ import random
 import math
 from constants.constants import COGRATULATIONS_STICKERS
 import database.lucky9_db as database
-from database.database import decrement_user_balance, get_user_balance
+from database.database import decrement_user_balance, increment_user_balance, get_user_balance
 from typing import List, Tuple
 from datetime import datetime, timedelta, timezone
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, CallbackQuery
@@ -68,13 +68,14 @@ def simulate_drop(game: dict, now: datetime=None) -> str:
             first_drop = first_drop.replace(tzinfo=timezone.utc)
         timediff = now - first_drop
     bin, pos = convert_time_diff_to_drop_position(timediff)
+    print(f"Bin: {bin}\nPos: {pos}")
     game["first_drop"] = None
 
     # Game over
-    if game.get("gamestate")[bin] == BALL:
+    if game.get("gamestate")[bin] == BALL or game.get("gamestate")[bin] == PREV:
         game["in_progress"] = False
 
-    game["gamestate"] = update_game_state(game.get("gamestate"))
+    game["gamestate"] = update_game_state(game.get("gamestate"), bin)
     game["num_of_balls"] += 1
 
     # If jackpot, automatic cashout
@@ -84,7 +85,12 @@ def simulate_drop(game: dict, now: datetime=None) -> str:
 
     database.update_game(game)
 
-    new_text = f"Time: {round(timediff.total_seconds(), 3)}\nAim: {pos}\nHit: {bin}\n\n"
+    if game["in_progress"]:
+        new_text = "Keep going!\n\n"
+    else:
+        new_text = "GAME OVER :(\n\n"
+
+    new_text += f"Time: {round(timediff.total_seconds(), 3)}\nAim: {round(pos + 5, 2)}\nHit: {bin + 1}\n\n"
     formatted_game_state = format_game_state(game.get("gamestate"))
     new_text += formatted_game_state
     
@@ -98,6 +104,8 @@ def execute_cashout(game: dict) -> int:
     if cashout_amount:
         game["in_progress"] = False
         game["cashout_amount"] = cashout_amount
+
+        increment_user_balance(user_id=game.get("user_id"), amount=cashout_amount)
         database.update_game(game)
     
     return cashout_amount
@@ -110,7 +118,7 @@ async def start_or_find_game(update: Update, context = ContextTypes.DEFAULT_TYPE
     formatted_game_state = format_game_state(game.get("gamestate"))
     
     await update.message.reply_text(
-        text=f"<pre>{formatted_game_state}</pre>",
+        text=f"<pre>Hit the buttons to start!\n\n{formatted_game_state}</pre>",
         reply_markup=GAME_KEYBOARD,
         parse_mode="HTML"
     )
@@ -209,7 +217,7 @@ async def play_again(update: Update, context = ContextTypes.DEFAULT_TYPE):
     game = get_or_create_game(user_id, user_name)
     formatted_game_state = format_game_state(game.get("gamestate"))
     await query.edit_message_text(
-        text=f"<pre>{formatted_game_state}</pre>",
+        text=f"<pre>Hit the buttons to start!\n\n{formatted_game_state}</pre>",
         reply_markup=GAME_KEYBOARD,
         parse_mode="HTML"
     )
@@ -401,7 +409,7 @@ def update_game_state(game_state: List, new_bin_no: int) -> dict:
             game_state[bin_no] = BALL
         if new_bin_no == bin_no:
             if game_state[bin_no] == EMPTY:
-                game_state[bin_no] == PREV
+                game_state[bin_no] = PREV
             else: # Was BALL
                 game_state[bin_no] = DEAD
 
