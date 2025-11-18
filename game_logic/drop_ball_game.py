@@ -1,10 +1,11 @@
 import random
 import math
 from constants.constants import COGRATULATIONS_STICKERS
+import database.lucky9_db as database
+from database.database import decrement_user_balance, get_user_balance
 from typing import List, Tuple
 from datetime import datetime, timedelta, timezone
-from database.database import increment_user_balance, decrement_user_balance, get_user_balance, insert_drop_ball_game, get_dropball_net_profit, get_dropball_stats
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, CallbackQuery
 from telegram.ext import ContextTypes
 
 GAME_KEYBOARD = InlineKeyboardMarkup([
@@ -22,144 +23,188 @@ GAME_KEYBOARD = InlineKeyboardMarkup([
     ]
 ])
 
-START = 0
-STOP = 1
+MAX_BALLS = 9
 
-NOT_ENOUGH_TO_START = -1
-NOT_ENOUGH_TO_DROP = -2
-NO_EXISTING_BALL_DROP_GAME = -3
-GAME_ALREADY_EXISTS = -4
-CANNOT_CASH_OUT = -5
-UNPROFITABLE = -6
-GAME_STARTED = 1
-FIRST_DROP_SUCCESS = 2
-SECOND_DROP_SUCCESS = 3
-GAME_OVER = 4
-CASH_OUT_SUCCESS = 5
-JACKPOT = 6
+EMPTY = 0
+BALL = 1
+PREV = 2
+DEAD = -1
 
-JACKPOT_PRIZE = 1200
+def is_live_game_exist(user_id: int) -> bool:
+    game = database.get_live_game(user_id)
+    if game:
+        return True
+    return False
+
+def get_or_create_game(user_id: int, user_name: str) -> dict:
+    game = database.get_live_game(user_id)
+    if game is None:
+        game = {
+            "user_id": user_id,
+            "user_name": user_name,
+            "multiplier": 1,
+            "first_drop": None,
+            "num_of_balls": 0,
+            "cashout_amount": 0,
+            "gamestate": [EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY],
+            "in_progress": True
+        }
+        database.update_game(game)
+
+    return game
+
+def simulate_drop(game: dict, now: datetime=None) -> str:
+    user_id = game.get("user_id")
+
+    if get_user_balance(user_id) < game.get("multiplier"):
+        return None
+    decrement_user_balance(user_id, amount=game.get("multiplier"))
+    
+    if now is None:
+        timediff = timedelta(seconds=0)
+    else:
+        timediff = now - game.get("first_drop")
+    bin, pos = convert_time_diff_to_drop_position(timediff)
+    game["first_drop"] = None
+
+    # Game over
+    if game.get("gamestate")[bin] == BALL:
+        game["in_progress"] = False
+
+    game["gamestate"] = update_game_state(game.get("gamestate"))
+    game["num_of_balls"] += 1
+
+    # If jackpot, automatic cashout
+    if game.get("num_of_balls") == MAX_BALLS:
+        cashout_amount = execute_cashout(game)
+        return f"JACKPOT!!! Cashed out for {cashout_amount}!!!"
+
+    database.update_game(game)
+
+    new_text = f"Time: {round(timediff.total_seconds(), 3)}\nAim: {pos}\nHit: {bin}\n\n"
+    formatted_game_state = format_game_state(game.get("gamestate"))
+    new_text += formatted_game_state
+    
+    return new_text
+
+def execute_cashout(game: dict) -> int:
+    max_streak = count_max_streak(game.get("gamestate"))
+    cashout_amount = convert_streak_to_amount(max_streak)
+    
+    # Cashout successful
+    if cashout_amount:
+        game["in_progress"] = False
+        game["cashout_amount"] = cashout_amount
+        database.update_game(game)
+    
+    return cashout_amount
+
+async def start_game(update: Update, context = ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    user_name = update.effective_user.name
+    game = get_or_create_game(user_id, user_name)
+
+    formatted_game_state = format_game_state(game.get("gamestate"))
+    
+    await update.message.reply_text(
+        text=formatted_game_state,
+        reply_markup=GAME_KEYBOARD
+    )
 
 async def start_drop(update: Update, context = ContextTypes.DEFAULT_TYPE):
-    pass
+    now = datetime.now(timezone.utc)
+
+    query = update.callback_query
+    user_id = update.effective_user.id
+    user_name = update.effective_user.name
+    game = get_or_create_game(user_id, user_name)
+    game["first_drop"] = now
+    database.update_game(game)
+
+    await query.answer("Started!", show_alert=False)
 
 async def stop_drop(update: Update, context = ContextTypes.DEFAULT_TYPE):
-    pass
+    now = datetime.now(timezone.utc)
+
+    query = update.callback_query
+    user_id = update.effective_user.id
+    user_name = update.effective_user.name
+    game = get_or_create_game(user_id, user_name)
+
+    # User has not hit START
+    if game.get("first_drop") is None:
+        await query.answer("Hit START first", show_alert=False)
+        return
+
+    new_text = simulate_drop(game, now)
+    # Not enough credits
+    if new_text is None:
+        await query.answer("Not enough credits", show_alert=False)
+        return
+    
+    await query.edit_message_text(
+        text=new_text,
+        reply_markup=GAME_KEYBOARD
+    )
 
 async def random_drop(update: Update, context = ContextTypes.DEFAULT_TYPE):
-    pass
+    query = update.callback_query
+    user_id = update.effective_user.id
+    user_name = update.effective_user.name
+    game = get_or_create_game(user_id, user_name)
+
+    new_text = simulate_drop(game)
+    # Not enough credits
+    if new_text is None:
+        await query.answer("Not enough credits.", show_alert=False)
+        return
+
+    await query.edit_message_text(
+        text=new_text,
+        reply_markup=GAME_KEYBOARD
+    )
 
 async def retry(update: Update, context = ContextTypes.DEFAULT_TYPE):
-    pass
+    query = update.callback_query
+    user_id = update.effective_user.id
+    user_name = update.effective_user.name
+    game = get_or_create_game(user_id, user_name)
+
+    game["first_drop"] = None
+    database.update_game(game)
+    await query.answer("Reset successfully!", show_alert=False)
 
 async def cash_out(update: Update, context = ContextTypes.DEFAULT_TYPE):
-    pass
+    query = update.callback_query
+    user_id = update.effective_user.id
+    user_name = update.effective_user.name
+    game = get_or_create_game(user_id, user_name)
+
+    cashout_amount = execute_cashout(game)
+    if cashout_amount:
+        new_text = f"Cashed out for {cashout_amount} credits!"
+        await query.edit_message_text(
+            text=new_text,
+            reply_markup=GAME_KEYBOARD
+        )
+    else:
+        await query.answer("Cannot cash out!", show_alert=False)
 
 async def play_again(update: Update, context = ContextTypes.DEFAULT_TYPE):
-    pass
-
-def create_game(user_id: int, user_name: str, multipler=1):
-    net_profit = get_dropball_net_profit()
-    if net_profit < -1000:
-        return UNPROFITABLE
-    for game in games:
-        if game.get("user_id") == user_id:
-            return GAME_ALREADY_EXISTS
-    new_game = {
-        "user_id": user_id,
-        "user_name": user_name,
-        "game_state": [False, False, False, False, False, False, False, False, False],
-        "first_drop": None,
-        "multiplier": multipler,
-        "num_of_balls": 0
-    }
-    games.append(new_game)
-    return GAME_STARTED
-
-
-def execute_drop_ball(user_id: int):
-    global games
-    timestamp = datetime.now(timezone.utc)
-    current_game = None
-    for game in games:
-        if game.get("user_id") == user_id:
-            current_game = game
-            break
-    if not current_game:
-        return NO_EXISTING_BALL_DROP_GAME, None
+    query = update.callback_query
+    user_id = update.effective_user.id
+    user_name = update.effective_user.name
     
-    first_drop = current_game.get("first_drop")
-    multipler = current_game.get("multiplier")
-    if not first_drop:
-        if get_user_balance(user_id) < multipler:
-            return NOT_ENOUGH_TO_DROP, None
-        decrement_user_balance(user_id, amount=multipler)
-        current_game["first_drop"] = timestamp
-        return FIRST_DROP_SUCCESS, None
+    if is_live_game_exist(user_id):
+        await query.answer("Finish current game first!", show_alert=False)
+        return
     
-    timediff = timestamp - first_drop
-    bin, pos = convert_time_diff_to_drop_position(timediff)
-    game_state = current_game.get("game_state")
-    data = {
-        "bin": bin,
-        "pos": pos,
-        "timediff": timediff,
-        "game_state": game_state
-    }
-
-    if game_state[bin]: # Ball hit occupied spot, game over
-        game_data = {
-            "user_id": current_game.get("user_id"),
-            "user_name": current_game.get("user_name"),
-            "multiplier": current_game.get("multiplier"),
-            "num_of_balls": current_game.get("num_of_balls") + 1,
-            "cashout_amount": 0
-        }
-        insert_drop_ball_game(game_data)
-        games.remove(current_game)
-        return GAME_OVER, data
-    
-    game_state[bin] = True
-    current_game["first_drop"] = None
-    current_game["num_of_balls"] += 1
-    if current_game.get("num_of_balls") == 9:
-        execute_cash_out(user_id)
-        return JACKPOT, data
-    return SECOND_DROP_SUCCESS, data
-
-def execute_cash_out(user_id: int):
-    global games
-    current_game = None
-    for game in games:
-        if game.get("user_id") == user_id:
-            current_game = game
-            break
-    if not current_game:
-        return NO_EXISTING_BALL_DROP_GAME, 0
-    
-    game_state = current_game.get("game_state")
-    max_streak = 0
-    streak = 0
-    for bin in game_state:
-        if bin:
-            streak += 1
-            max_streak = max(max_streak, streak)
-        else:
-            streak = 0
-    if max_streak < 3:
-        return CANNOT_CASH_OUT, 0
-    cashout_amount = convert_streak_to_amount(max_streak)
-    increment_user_balance(user_id, cashout_amount)
-    game_data = {
-        "user_id": current_game.get("user_id"),
-        "user_name": current_game.get("user_name"),
-        "multiplier": current_game.get("multiplier"),
-        "num_of_balls": current_game.get("num_of_balls"),
-        "cashout_amount": cashout_amount
-    }
-    insert_drop_ball_game(game_data)
-    games.remove(current_game)
-    return CASH_OUT_SUCCESS, cashout_amount
+    game = get_or_create_game(user_id, user_name)
+    formatted_game_state = format_game_state(game.get("gamestate"))
+    await query.edit_message_text(
+        text=formatted_game_state,
+        reply_markup=GAME_KEYBOARD
+    )
 
 def convert_streak_to_amount(streak: int) -> int:
     if streak == 3:
@@ -261,123 +306,6 @@ def sample_bin_at_time(
             return i, probs
     return len(probs) - 1, probs
 
-async def start_drop_ball(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.effective_user.id
-    user_name = update.effective_user.name
-
-    result = create_game(user_id, user_name)
-
-    if result == UNPROFITABLE:
-        await update.message.reply_text("Game is suspended due to unexpected losses")
-        return
-
-    if result == GAME_ALREADY_EXISTS:
-        await update.message.reply_text("Game already exists.")
-        return
-
-    await update.message.reply_text(
-        "Game started! Use the buttons to play.",
-        reply_markup=GAME_KEYBOARD
-    )
-
-async def drop_ball(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    query = update.callback_query
-
-    user_id = query.from_user.id
-    
-    game = next((g for g in games if g["user_id"] == user_id), None)
-    if game is None:
-        await query.answer("This is not your game!", show_alert=True)
-        return
-
-    status, data = execute_drop_ball(user_id)
-    
-    if status == NO_EXISTING_BALL_DROP_GAME:
-        await query.answer("No active game. Use /startlucky9 to start your own.", show_alert=True)
-        return
-    if status == NOT_ENOUGH_TO_DROP:
-        await query.answer("You don't have enough credits!", show_alert=True)
-        return
-    if status == FIRST_DROP_SUCCESS:
-        # await query.edit_message_reply_markup(
-        #     reply_markup=GAME_KEYBOARD
-        # )
-        await query.answer()
-        return
-    
-    await query.answer()
-    assert data
-    game_state = data["game_state"]
-    bin = data["bin"]
-    timediff = data["timediff"]
-    pos = data["pos"]
-
-    if status == GAME_OVER:
-        formatted = format_game_state(game_state, bin, True)
-        msg = (
-            f"<pre>GAME OVER\n\nTime: {round(timediff.total_seconds(), 3)}s\n"
-            f"Aim: {round(pos + 5, 3)}\n"
-            f"Hit: {bin + 1}\n\n{formatted}</pre>"
-        )
-
-        await query.edit_message_text(msg, parse_mode="HTML")
-        await context.bot.send_message(
-            chat_id=query.message.chat_id,
-            text="/startlucky9 to play again"
-        )
-        return
-    if status == SECOND_DROP_SUCCESS:
-        formatted = format_game_state(game_state, bin, False)
-        msg = (
-            f"<pre>Time: {round(timediff.total_seconds(), 3)}s\n"
-            f"Aim: {round(pos + 5, 3)}\n"
-            f"Hit: {bin + 1}\n\n{formatted}</pre>"
-        )
-
-        await query.edit_message_text(msg, parse_mode="HTML", reply_markup=GAME_KEYBOARD)
-        return
-    if status == JACKPOT:
-        formatted = format_game_state(game_state, bin, False)
-        msg = (
-            f"<pre>JACKPOT!!!\n\nTime: {round(timediff.total_seconds(), 3)}s\n"
-            f"Aim: {round(pos + 5, 3)}\n"
-            f"Hit: {bin + 1}\n\n{formatted}</pre>"
-        )
-        await query.message.reply_text(msg, parse_mode="HTML")
-        await context.bot.send_sticker(
-            chat_id=query.message.chat_id,
-            sticker=random.choice(COGRATULATIONS_STICKERS),
-            reply_to_message_id=query.message.message_id
-        )
-        await query.message.reply_text(f"CASHED OUT FOR {JACKPOT_PRIZE}!!!")
-        return
-    
-async def cash_out(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    query = update.callback_query
-
-    user_id = query.from_user.id
-
-    game = next((g for g in games if g["user_id"] == user_id), None)
-    if game is None:
-        await query.answer("This is not your game!", show_alert=True)
-        return
-
-    status, amount = execute_cash_out(user_id)
-
-    if status == NO_EXISTING_BALL_DROP_GAME:
-        await query.answer("No active game!", show_alert=True)
-        return
-    if status == CANNOT_CASH_OUT:
-        await query.answer("You need a chain of at least 3 to cash out", show_alert=True)
-        return
-    
-    await query.answer()
-    await query.message.reply_text(f"Cashed out for {amount} credits!")
-    await context.bot.send_message(
-        chat_id=query.message.chat_id,
-        text="/startlucky9 to play again"
-    )
-
 async def help_aim(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     with open("dropball chance distribution.png", "rb") as f:
         await update.message.reply_photo(photo=f)
@@ -403,44 +331,42 @@ Details: Each dropped ball costs 1 credit. Time the interval between button pres
     """
     await update.message.reply_text(message)
 
-async def db_stats(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    profit = get_dropball_net_profit()
-    await update.message.reply_text(f"Net profit: {profit}")
+# async def db_stats(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+#     profit = get_dropball_net_profit()
+#     await update.message.reply_text(f"Net profit: {profit}")
 
-async def lucky9_stats(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    user_id = update.effective_user.id
-    stats = get_dropball_stats(user_id)
-    message = f"""
-Balls dropped: {stats.get("lifetime_spent")}
-Lifetime cashout: {stats.get("lifetime_cashout")}
-Lifetime net: {stats.get("lifetime_net")}
-Cashout percentage: {round(stats.get("cashout_percentage") * 100, 2)}%
-"""
-    await update.message.reply_text(message)
+# async def lucky9_stats(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+#     user_id = update.effective_user.id
+#     stats = get_dropball_stats(user_id)
+#     message = f"""
+# Balls dropped: {stats.get("lifetime_spent")}
+# Lifetime cashout: {stats.get("lifetime_cashout")}
+# Lifetime net: {stats.get("lifetime_net")}
+# Cashout percentage: {round(stats.get("cashout_percentage") * 100, 2)}%
+# """
+#     await update.message.reply_text(message)
 
-def format_game_state(game_state, latest_bin, game_over: bool):
-    formatted_string = ""
-    if game_over:
-        for i in range(9):
-            if i == latest_bin:
-                formatted_string += "x "
-            else:
-                formatted_string += "  "
-        formatted_string += "\n"
-    for i in range(9):
-        bin = game_state[i]
-        if i == latest_bin:
-            if game_over:
-                formatted_string += "o "
-            else:
-                formatted_string += "x "
-        elif bin:
-            formatted_string += "o "
-        else:
-            formatted_string += "_ "
-    formatted_string += "\n1 2 3 4 5 6 7 8 9"
-    return formatted_string
+def format_game_state(game_state: List) -> str:
+    line1 = "" # Top row
+    line2 = "" # Bottom row
+    line3 = "1 2 3 4 5 6 7 8 9"
 
+    for bin in game_state:
+        if bin == DEAD:
+            line1 += "x "
+            line2 += "o "
+        elif bin == BALL:
+            line1 += "  "
+            line2 += "o "
+        elif bin == PREV:
+            line1 += "  "
+            line2 += "x "
+        else: # bin == EMPTY
+            line1 += "  "
+            line2 += "_ "
+    
+    return f"{line1}\n{line2}\n{line3}"
+    
 def execute_help_aim(target_bin: float):
     if target_bin < 1 or target_bin > 9:
         return None
@@ -460,3 +386,26 @@ def execute_help_aim(target_bin: float):
 
     output.sort()
     return output
+
+def update_game_state(game_state: List, new_bin_no: int) -> dict:
+    for bin_no in range(9):
+        if game_state[bin_no] == PREV:
+            game_state[bin_no] = BALL
+        if new_bin_no == bin_no:
+            if game_state[bin_no] == EMPTY:
+                game_state[bin_no] == PREV
+            else: # Was BALL
+                game_state[bin_no] = DEAD
+
+    return game_state
+
+def count_max_streak(game_state: List) -> int:
+    max_streak = 0
+    streak = 0
+    for bin in game_state:
+        if bin == BALL or bin == PREV:
+            streak += 1
+            max_streak = max(streak, max_streak)
+        else:
+            streak = 0
+    return max_streak

@@ -9,6 +9,7 @@ import time
 import logging
 import asyncio
 from constants.constants import *
+from game_logic.drop_ball_game import *
 
 load_dotenv()
 TOKEN = os.getenv("BOT_TOKEN")
@@ -49,12 +50,13 @@ def build_application():
     # app.add_handler(CallbackQueryHandler(drop_ball, pattern="^drop_ball$", filters=user_filter & dm_filter))
     # app.add_handler(CallbackQueryHandler(cash_out, pattern="^cash_out$", filters=user_filter & dm_filter))
 
-    # app.add_handler(CallbackQueryHandler(start_game, pattern="^start_drop$"))
-    # app.add_handler(CallbackQueryHandler(stop_game, pattern="^stop_drop$"))
-    # app.add_handler(CallbackQueryHandler(random_action, pattern="^random_drop$"))
-    # app.add_handler(CallbackQueryHandler(retry_game, pattern="^retry$"))
-    # app.add_handler(CallbackQueryHandler(cash_out, pattern="^cash_out$"))
-    # app.add_handler(CallbackQueryHandler(again_game, pattern="^play_again$"))
+    app.add_handler(CommandHandler("lucky9", start_game))
+    app.add_handler(CallbackQueryHandler(start_drop, pattern="^start_drop$"))
+    app.add_handler(CallbackQueryHandler(stop_drop, pattern="^stop_drop$"))
+    app.add_handler(CallbackQueryHandler(random_drop, pattern="^random_drop$"))
+    app.add_handler(CallbackQueryHandler(retry, pattern="^retry$"))
+    app.add_handler(CallbackQueryHandler(cash_out, pattern="^cash_out$"))
+    app.add_handler(CallbackQueryHandler(play_again, pattern="^play_again$"))
 
     # Button press game
     app.add_handler(CommandHandler("button", summon_button))
