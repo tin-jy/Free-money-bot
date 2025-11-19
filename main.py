@@ -42,7 +42,7 @@ def build_application():
     app.add_handler(CommandHandler("recent", commands.get_withdrawal_history))
 
     # Lucky9 game
-    app.add_handler(CommandHandler("lucky9", start_or_find_game))
+    app.add_handler(CommandHandler("lucky9", start_or_find_game, filters=dm_filter))
     app.add_handler(CallbackQueryHandler(start_drop, pattern="^start_drop$"))
     app.add_handler(CallbackQueryHandler(stop_drop, pattern="^stop_drop$"))
     app.add_handler(CallbackQueryHandler(random_drop, pattern="^random_drop$"))
@@ -50,8 +50,8 @@ def build_application():
     app.add_handler(CallbackQueryHandler(cash_out, pattern="^cash_out$"))
     app.add_handler(CallbackQueryHandler(play_again, pattern="^play_again$"))
 
-    # Button press game
-    app.add_handler(CommandHandler("button", button.summon_button))
+    # Button game
+    app.add_handler(CommandHandler("button", button.summon_button, filters=dm_filter))
     app.add_handler(CommandHandler("buttonleaderboard", button.get_highscores))
     app.add_handler(CallbackQueryHandler(button.hit_button, pattern="^hit_button$"))
 

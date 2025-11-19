@@ -34,7 +34,6 @@ async def hit_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
     await update.callback_query.edit_message_text(
         text, reply_markup=InlineKeyboardMarkup(keyboard)
     )
-    await update.callback_query.answer()
 
 async def summon_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """User typed /button (start or continue game)."""
