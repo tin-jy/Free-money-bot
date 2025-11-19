@@ -25,29 +25,6 @@ recent_stickers = {
     "angry_stickers": sample.copy()
 }
 
-async def announcement(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    message = " ".join(context.args)
-
-    if not message:
-        await update.message.reply_text(
-            "Please provide a message.\n\nUsage:\n/announcement <your message>"
-        )
-        return
-
-    await context.bot.send_message(chat_id=CCOS, text=message)
-    await update.message.reply_text("Announcement sent!")
-
-async def hello(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    if update.effective_user.id:
-        user_id = update.effective_user.id
-    else:
-        user_id = "NA"
-    if update.effective_chat.id:
-        chat_id = update.effective_chat.id
-    else:
-        chat_id = "NA"
-    await update.message.reply_text(f'Hello {update.effective_user.first_name}\nUser_id: {user_id}\nChat_id: {chat_id}')
-
 async def help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     response = f"Use /geiwoqian to get credits! Users get 3 attempts weekly that reset every Saturday at 8pm SGT. Bot top-ups are randomized."
     await update.message.reply_text(response)
@@ -281,17 +258,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     recent_messages.append(text)
 
-async def add_attempt(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    user = update.effective_user  
-    args = context.args
-    try:
-        user_name = args[0]
-        logic.add_attempt(user_name)
-    except Exception as e:
-        await update.message.reply_text(f'{e}')
-        return
-    
-    await update.message.reply_text(f"Added 1 attempt for {user.name}")
+
 
 async def get_user_balance(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     logic.reset_user_attempts()
@@ -389,31 +356,7 @@ async def get_user_history(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         line = format_history_entry(attempt, max_amount_width)
         response += f"<code>{line}</code>\n"
     
-    await update.message.reply_text(response, parse_mode="HTML")
-
-async def get_bank_balance(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    logic.top_up_bank()
-    balance = logic.get_bank_balance()
-    next_top_up = logic.get_bank_next_top_up()
-    assert isinstance(next_top_up, datetime)
-
-    if next_top_up.tzinfo is None:
-        next_top_up = next_top_up.replace(tzinfo=timezone.utc)
-
-    line = time_till(next_top_up)
-
-    await update.message.reply_text(f'Bank balance: {balance}\nTime to next top-up: {line}')    
-    
-async def set_user_balance(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    user = update.effective_user
-    args = context.args
-    try:
-        user_name = args[0]
-        amount = int(args[1])
-        logic.set_user_balance(user_name, amount)
-        await update.message.reply_text(f"User {user_name}'s balance set to {amount}")
-    except Exception:
-        await update.message.reply_text("Invalid format")
+    await update.message.reply_text(response, parse_mode="HTML")   
 
 async def handle_sticker(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     try:
@@ -547,3 +490,4 @@ def format_withdrawal_entry(entry, max_user_width, max_amount_width):
 
 def roll_chance(chance: int) -> bool:
     return chance >= random.randint(1, 100)
+

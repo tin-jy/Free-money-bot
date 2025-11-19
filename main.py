@@ -10,6 +10,7 @@ from constants.constants import *
 
 import game_logic.commands as commands
 import game_logic.button as button
+import admin.admin as admin
 
 load_dotenv()
 TOKEN = os.getenv("BOT_TOKEN")
@@ -33,7 +34,6 @@ def build_application():
     chat_filter = filters.Chat(chat_id=WHITELISTED_CHAT_IDS)
 
     # Regular commands
-    app.add_handler(CommandHandler("hello", commands.hello, filters=admin_filter))
     app.add_handler(CommandHandler("help", commands.help))
     app.add_handler(CommandHandler("geiwoqian", commands.take, filters=user_filter))
     app.add_handler(CommandHandler("balance", commands.get_user_balance, filters=user_filter))
@@ -66,10 +66,11 @@ def build_application():
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, commands.handle_message))
 
     # Admin commands
-    app.add_handler(CommandHandler("addattempt", commands.add_attempt, filters=admin_filter))
-    app.add_handler(CommandHandler("setbalance", commands.set_user_balance, filters=admin_filter))
-    app.add_handler(CommandHandler("bank", commands.get_bank_balance, filters=admin_filter))
-    app.add_handler(CommandHandler("announcement", commands.announcement, filters=admin_filter))
+    app.add_handler(CommandHandler("hello", admin.hello, filters=admin_filter))
+    app.add_handler(CommandHandler("addattempt", admin.add_attempt, filters=admin_filter))
+    app.add_handler(CommandHandler("setbalance", admin.set_user_balance, filters=admin_filter))
+    app.add_handler(CommandHandler("bank", admin.get_bank_balance, filters=admin_filter))
+    app.add_handler(CommandHandler("announcement", admin.announcement, filters=admin_filter))
 
     async def error_handler(update, context):
         err = context.error
